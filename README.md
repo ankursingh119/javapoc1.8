@@ -128,7 +128,6 @@ The project code is cross-platform, but the helper scripts and `launch.json` are
 
 - Install the same tools (JDK 8, Maven, Node 20.19+, Docker, VS Code) with your package manager.
 - Skip `setup-local.cmd` and run its steps by hand (see 3.2).
-- In `.vscode/launch.json` replace `${env:JAVA_HOME}/bin/java.exe` with `${env:JAVA_HOME}/bin/java`.
 - Create `.vscode/settings.json` yourself (see 3.3).
 - `host.docker.internal` must resolve to the host. Docker Desktop does this on macOS; on Linux add `127.0.0.1 host.docker.internal` to `/etc/hosts`.
 
@@ -172,7 +171,7 @@ docker compose -f docker/local/docker-compose.yml up -d
 
 ### 3.3 Check `.vscode/settings.json`
 
-`setup-local.cmd` creates it. If you write it yourself, it looks like this (use your own paths):
+`setup-local.cmd` creates it from your `JAVA_HOME` (the file is git-ignored, so each developer has their own). If you write it yourself, it looks like this (use your own paths):
 
 ```json
 {
