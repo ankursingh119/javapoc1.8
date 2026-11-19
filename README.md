@@ -172,7 +172,7 @@ docker compose -f docker/local/docker-compose.yml up -d
 
 ### 3.3 Check `.vscode/settings.json`
 
-`setup-local.cmd` creates it. If you write it yourself, it looks like this (use your own paths):
+`setup-local.cmd` creates it from your `JAVA_HOME` (the file is git-ignored, so each developer has their own). If you write it yourself, it looks like this (use your own paths):
 
 ```json
 {

@@ -7,7 +7,7 @@
             "request": "launch",
             "mainClass": "com.example.salesbatch.workflow.LocalDebugServer",
             "projectName": "workflow-app",
-            "javaExec": "${env:JAVA_HOME}/bin/java.exe",
+            "javaExec": "${env:JAVA_HOME}/bin/java",
             "console": "internalConsole",
             "cwd": "${workspaceFolder}",
             "vmArgs": "-Dserver.port=8081"
@@ -18,7 +18,7 @@
             "request": "launch",
             "mainClass": "com.example.salesbatch.workflow.LocalDebugServer",
             "projectName": "workflow-app",
-            "javaExec": "${env:JAVA_HOME}/bin/java.exe",
+            "javaExec": "${env:JAVA_HOME}/bin/java",
             "console": "internalConsole",
             "cwd": "${workspaceFolder}",
             "vmArgs": "-Dserver.port=8081 -Dspark.debug.port=5006 -Dspark.debug.suspend=true"
@@ -37,7 +37,7 @@
             "request": "launch",
             "mainClass": "com.example.salesbatch.workflow.LocalDebugServer",
             "projectName": "workflow-app",
-            "javaExec": "${env:JAVA_HOME}/bin/java.exe",
+            "javaExec": "${env:JAVA_HOME}/bin/java",
             "console": "internalConsole",
             "cwd": "${workspaceFolder}",
             "vmArgs": "-Dserver.port=8081 -Ddebug.inmemory=true"
@@ -48,7 +48,7 @@
             "request": "launch",
             "mainClass": "com.example.salesbatch.workflow.LocalDebugServer",
             "projectName": "workflow-app",
-            "javaExec": "${env:JAVA_HOME}/bin/java.exe",
+            "javaExec": "${env:JAVA_HOME}/bin/java",
             "console": "internalConsole",
             "cwd": "${workspaceFolder}",
             "vmArgs": "-Dserver.port=8081 -Dspark.mode=docker-cluster"
@@ -60,7 +60,7 @@
             "request": "launch",
             "mainClass": "com.example.salesbatch.workflow.LocalDebugServer",
             "projectName": "workflow-app",
-            "javaExec": "${env:JAVA_HOME}/bin/java.exe",
+            "javaExec": "${env:JAVA_HOME}/bin/java",
             "console": "internalConsole",
             "cwd": "${workspaceFolder}"
         },
@@ -71,7 +71,7 @@
             "request": "launch",
             "mainClass": "com.example.salesbatch.workflow.LocalDebugServer",
             "projectName": "workflow-app",
-            "javaExec": "${env:JAVA_HOME}/bin/java.exe",
+            "javaExec": "${env:JAVA_HOME}/bin/java",
             "console": "internalConsole",
             "cwd": "${workspaceFolder}"
         }
