@@ -1,0 +1,79 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Debug app (real HBase + Scala Spark job)",
+            "request": "launch",
+            "mainClass": "com.example.salesbatch.workflow.LocalDebugServer",
+            "projectName": "workflow-app",
+            "javaExec": "${env:JAVA_HOME}/bin/java.exe",
+            "console": "internalConsole",
+            "cwd": "${workspaceFolder}",
+            "vmArgs": "-Dserver.port=8081"
+        },
+        {
+            "type": "java",
+            "name": "Debug app + wait for Scala debugger on 5006",
+            "request": "launch",
+            "mainClass": "com.example.salesbatch.workflow.LocalDebugServer",
+            "projectName": "workflow-app",
+            "javaExec": "${env:JAVA_HOME}/bin/java.exe",
+            "console": "internalConsole",
+            "cwd": "${workspaceFolder}",
+            "vmArgs": "-Dserver.port=8081 -Dspark.debug.port=5006 -Dspark.debug.suspend=true"
+        },
+        {
+            "type": "scala",
+            "name": "Attach to Scala Spark job (5006)",
+            "request": "attach",
+            "buildTarget": "spark-job",
+            "hostName": "localhost",
+            "port": 5006
+        },
+        {
+            "type": "java",
+            "name": "Debug app (in-memory fakes, no Docker)",
+            "request": "launch",
+            "mainClass": "com.example.salesbatch.workflow.LocalDebugServer",
+            "projectName": "workflow-app",
+            "javaExec": "${env:JAVA_HOME}/bin/java.exe",
+            "console": "internalConsole",
+            "cwd": "${workspaceFolder}",
+            "vmArgs": "-Dserver.port=8081 -Ddebug.inmemory=true"
+        },
+        {
+            "type": "java",
+            "name": "Debug app (HBase + Docker Spark cluster)",
+            "request": "launch",
+            "mainClass": "com.example.salesbatch.workflow.LocalDebugServer",
+            "projectName": "workflow-app",
+            "javaExec": "${env:JAVA_HOME}/bin/java.exe",
+            "console": "internalConsole",
+            "cwd": "${workspaceFolder}",
+            "vmArgs": "-Dserver.port=8081 -Dspark.mode=docker-cluster"
+        },
+        {
+            "name": "Debug app (Postgres + Docker Spark cluster)",
+            "vmArgs": "-Dserver.port=8081 -Duser.timezone=UTC -Dspark.mode=docker-cluster -Dactiviti.jdbc.url=jdbc:postgresql://localhost:5432/salesbatch_activiti -Dactiviti.jdbc.driver=org.postgresql.Driver -Dactiviti.jdbc.username=salesbatch -Dactiviti.jdbc.password=salesbatch",
+            "type": "java",
+            "request": "launch",
+            "mainClass": "com.example.salesbatch.workflow.LocalDebugServer",
+            "projectName": "workflow-app",
+            "javaExec": "${env:JAVA_HOME}/bin/java.exe",
+            "console": "internalConsole",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Debug app (Postgres + Docker Spark cluster) + wait for Scala debugger on 5006",
+            "vmArgs": "-Dserver.port=8081 -Duser.timezone=UTC -Dspark.mode=docker-cluster -Dactiviti.jdbc.url=jdbc:postgresql://localhost:5432/salesbatch_activiti -Dactiviti.jdbc.driver=org.postgresql.Driver -Dactiviti.jdbc.username=salesbatch -Dactiviti.jdbc.password=salesbatch -Dspark.debug.port=5006 -Dspark.debug.suspend=true",
+            "type": "java",
+            "request": "launch",
+            "mainClass": "com.example.salesbatch.workflow.LocalDebugServer",
+            "projectName": "workflow-app",
+            "javaExec": "${env:JAVA_HOME}/bin/java.exe",
+            "console": "internalConsole",
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
