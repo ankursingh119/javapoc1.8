@@ -208,7 +208,7 @@ No CI/CD configuration was found in the repository (no `.github/workflows`, `.gi
 
 Do:
 - Record failures in `batch_audit` and set `failed=true` instead of throwing from a delegate.
-- Keep Spark, Hadoop and Scala as `provided` in `spark-job`, and keep the bundled hbase-server with Guava relocated.
+- Keep Spark, Hadoop and Scala as `provided` in `spark-job`, and keep the bundled HBase client and `hbase-mapreduce` (home of `TableInputFormat` in HBase 2) with Guava relocated.
 - Rerun `node scripts/fix-bloop.js` after every Bloop import.
 - Use a new business date for each test.
 
