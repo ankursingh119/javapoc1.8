@@ -86,3 +86,14 @@ run() { # file date
 run sales-20261113.csv 20261113
 run sales-20261115.csv 20261115
 run sales-bad.csv 20261116
+
+# Provenance: which Java ran, and what the real HBase holds in sales_agg (only the Spark job writes that table, so its
+# rows show the real job ran against the real HBase). Skipped when the HBase container is not reachable.
+java -version > "$OUT/java-version.txt" 2>&1 || true
+HBASE_CONTAINER=${HBASE_CONTAINER:-sales-hbase}
+if docker inspect "$HBASE_CONTAINER" > /dev/null 2>&1; then
+  echo "scan 'sales_agg'" | docker exec -i "$HBASE_CONTAINER" hbase shell -n > "$OUT/hbase-sales_agg.txt" 2>&1 || true
+  echo "capture: sales_agg scanned from container $HBASE_CONTAINER into $OUT/hbase-sales_agg.txt"
+else
+  echo "capture: no container $HBASE_CONTAINER, sales_agg not scanned"
+fi
