@@ -1,5 +1,7 @@
 # CI for common, spark-job and workflow-app (ui/ is out of scope). Card SBJ17-2, docs/cards/SBJ17-2.md.
-# jdk8 is the job to make the required status check on main. jdk17 runs the same commands and may fail for now.
+# jdk8 is the job to make the required status check on main. jdk17 builds and tests common and workflow-app only
+# (spark-job stays on JDK 8 and Spark 2.4 until its own card, SBJ17-9); it stays allowed to fail until a person
+# makes it required.
 # Every run step is one line: scripts/ci/acceptance/AC2 and AC4 read them line by line.
 # AC1, AC2, AC4 and AC5 check card SBJ17-2 itself (workflow shape, src/ unchanged), so they run only on that card's
 # branch and pull request; later cards that change src/ or the jobs are not held to them. AC3 (the HBase end-to-end
@@ -105,8 +107,8 @@ jobs:
       - run: echo "127.0.0.1 host.docker.internal" | sudo tee -a /etc/hosts
       - run: docker compose -f docker/local/docker-compose.yml up -d hbase
       - run: bash scripts/ci/wait-for-hbase.sh 300
-      - run: mvn -B install
-      - run: mvn -B test
+      - run: mvn -B -pl common,workflow-app -am install
+      - run: mvn -B -pl common,workflow-app -am test
       - if: success() || failure()
         run: bash scripts/java17/acceptance/AC1_jdk17_build_and_tests_pass.sh
       - if: success() || failure()
