@@ -49,13 +49,14 @@ jobs:
       - run: echo "127.0.0.1 host.docker.internal" | sudo tee -a /etc/hosts
       - run: docker compose -f docker/local/docker-compose.yml up -d hbase
       - run: bash scripts/ci/wait-for-hbase.sh 300
-      - run: mvn -B install
+      - run: mvn -B install -DskipTests
       - run: mvn -B test
       - if: github.ref_name == 'SBJ17-2' || github.head_ref == 'SBJ17-2'
         run: bash scripts/ci/acceptance/AC2_jdk8_job_installs_then_tests.sh
       - id: hbase_e2e
         run: bash scripts/ci/acceptance/AC3_hbase_end_to_end_test_runs.sh
       - id: reference_compare
+        if: success() || failure()
         run: bash scripts/reference/acceptance/AC4_compare_with_reference.sh
       - if: success() || failure()
         run: bash scripts/reference/acceptance/AC1_reference_reports_committed.sh
