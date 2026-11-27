@@ -3,14 +3,14 @@
 A sales-batch workflow application. You upload a sales CSV, and the app:
 
 1. loads it into **HBase 1.4**,
-2. runs a **Spark 2.4 (Scala 2.11)** job that aggregates it,
+2. runs a **Spark 3.5 (Scala 2.12)** job that aggregates it,
 3. waits for a **manager approval**,
 4. writes `report-<businessDate>.csv`.
 
 | Layer | Technology |
 |---|---|
 | API and workflow | Java 8 class files, runs on Java 8 or 17; Spring MVC 5.3, Activiti 5.22, embedded Jetty 9.4 |
-| Batch job | Scala 2.11 on Spark 2.4.8 (target runtime: EMR 5.36) |
+| Batch job | Scala 2.12 on Spark 3.5.5, Java 8 class files (the production cluster must move to an EMR release with Spark 3.5 before release) |
 | Storage | HBase 1.4 (runs in Docker) |
 | UI | Angular 20 |
 
@@ -67,7 +67,7 @@ You need about **6 GB of free RAM**, **10 GB of disk** and internet access for t
 
 | # | Tool | Version | Download | Notes |
 |---|---|---|---|---|
-| 1 | **JDK 8** | Temurin 8 (8u4xx) | https://adoptium.net/temurin/releases/?version=8 | **Must be 8** for the full build and the local debug flow: the Spark job (Spark 2.4.8) runs only on Java 8, and the debug server starts it with its own Java. `common` and `workflow-app` alone also build and run on JDK 17 (`mvn -pl common,workflow-app -am install`), as the pipeline's JDK 17 job does. Choose the `.msi` installer and tick **Set JAVA_HOME variable** and **Add to PATH** |
+| 1 | **JDK 8** | Temurin 8 (8u4xx) | https://adoptium.net/temurin/releases/?version=8 | **Must be 8** for the full build and the local debug flow: the Spark job (Spark 3.5.5) is built and tested on Java 8, and the debug server starts it with its own Java. `common` and `workflow-app` alone also build and run on JDK 17 (`mvn -pl common,workflow-app -am install`), as the pipeline's JDK 17 job does. Choose the `.msi` installer and tick **Set JAVA_HOME variable** and **Add to PATH** |
 | 2 | **Apache Maven** | 3.6 or newer (3.9.9 tested) | https://maven.apache.org/download.cgi | Unzip, then add its `bin` folder to `PATH` |
 | 3 | **Node.js** | **20.19 or newer** (24.14 tested) | https://nodejs.org (LTS) | Angular 20 does not work on Node 12 to 18. Check with `node -v` |
 | 4 | **Docker** | Docker Desktop or Rancher Desktop | https://www.docker.com/products/docker-desktop/ | Must be **running**. Allow about 4 GB of memory for it |
@@ -152,7 +152,7 @@ It does six things and stops with a clear message if one fails:
 | Step | What it does |
 |---|---|
 | 1 | Checks JDK 8, Maven, Node, Docker (and that Docker is running) |
-| 2 | Builds the Docker image `salesbatch-runtime` (Java 8 + Spark 2.4.8; the first build downloads about 230 MB) |
+| 2 | Builds the Docker image `salesbatch-runtime` (Java 8 + Spark 3.5.5; the first build downloads about 400 MB) |
 | 3 | `mvn package` for the Java and Scala code, and writes `target/local-classpath.txt` |
 | 4 | `npm ci` in `ui/` |
 | 5 | Writes `.vscode/settings.json` for your machine (skipped if the file already exists) |
@@ -454,7 +454,7 @@ Then use the launch configuration **Debug app (Postgres + Docker Spark cluster)*
 | `Could not find or load main class RiskCanvas\...` | A `-D` option contained a path with a space and was split. Do not put `${workspaceFolder}` paths in `vmArgs` |
 | `Missing spark-job/target/local-classpath.txt` | Run the `mvn ... dependency:build-classpath` command (3.2) |
 | `TransportTimeoutException` popup | Keep `"console": "internalConsole"` in `launch.json` |
-| The Spark job fails when the local debug server runs on Java 17 | The debug server starts the Scala job with its own Java, and Spark 2.4.8 needs Java 8. Keep `javaExec` and `java.configuration.runtimes` pointing at JDK 8 (or use the Docker Spark cluster configuration), and start VS Code after setting `JAVA_HOME` |
+| The Spark job fails when the local debug server runs on Java 17 | The debug server starts the Scala job with its own Java, and the job (Spark 3.5.5) is built and tested on Java 8 only. Keep `javaExec` and `java.configuration.runtimes` pointing at JDK 8 (or use the Docker Spark cluster configuration), and start VS Code after setting `JAVA_HOME` |
 | UI shows another app, or the port is in use | The UI uses port 4300 (`ui/angular.json`) |
 | API fails at startup with an HBase error | HBase is not ready or not running. `docker ps`, wait a minute; ports 2181, 16000, 16020 must be published |
 | Run is `FAILED` with a connection error to `host.docker.internal` | HBase is down, or the name does not resolve. See the hosts-file note in section 9 |
@@ -478,7 +478,7 @@ Then use the launch configuration **Debug app (Postgres + Docker Spark cluster)*
 | `spark-job/` | Scala Spark job, built as a fat jar |
 | `workflow-app/` | Spring MVC + Activiti on embedded Jetty: REST API, Swagger UI, process definition. `LocalDebugServer` (in `src/test`) is the entry point used for local debugging |
 | `ui/` | Angular 20 front end (`proxy.conf.json` forwards `/batches` and `/data` to `localhost:8081`) |
-| `docker/` | `Dockerfile` (Java 8 + Spark 2.4.8), and `local/docker-compose.yml` for HBase and the Spark cluster |
+| `docker/` | `Dockerfile` (Java 8 + Spark 3.5.5), and `local/docker-compose.yml` for HBase and the Spark cluster |
 | `sample-data/` | Example CSV files |
 | `scripts/` | `fix-bloop.js`, `write-vscode-settings.ps1` |
 | `.vscode/` | `launch.json`, `extensions.json`, and `settings.json` (machine specific, written by setup) |

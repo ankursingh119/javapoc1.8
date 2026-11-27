@@ -1,0 +1,12 @@
+== head, built and tested on JDK 8
+  mvn exit 0
+PASS: AC3 all 10 spark-job class files target Java 8 (major 52), and its 4 test classes ran on JDK 8
+== mutant a: built and tested on JDK 17 (class target unchanged)
+  mvn exit 1
+FAIL: spark-job/target/surefire-reports/TEST-com.example.salesbatch.spark.AC2SmallRegionIsReadTest.xml did not run on JDK 8 (name="java.specification.version" value="17")
+== mutant b: scalac -target:11, built on JDK 17, tests skipped
+  mvn exit 0
+FAIL: spark-job has no surefire reports (run mvn -B test first)
+== mutant c: a Java 11 class file in spark-job/target/classes
+  spark-job/target/classes/Planted.class: major version 55
+FAIL: 1 of 11 spark-job class files do not target Java 8 (major 52)

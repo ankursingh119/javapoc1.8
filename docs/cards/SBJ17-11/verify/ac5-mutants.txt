@@ -1,0 +1,17 @@
+== head unchanged
+PASS: AC5 src/main changes only by the one setting, and every changed file lies in the allowed paths (21 files)
+warning: in the working copy of 'common/src/main/java/com/example/salesbatch/common/AggRecord.java', LF will be replaced by CRLF the next time Git touches it
+== another src/main file changed
+FAIL: src/main files other than spark-job/src/main/scala/com/example/salesbatch/spark/SalesAggregator.scala changed: common/src/main/java/com/example/salesbatch/common/AggRecord.java
+warning: in the working copy of 'ARCHITECTURE.md', LF will be replaced by CRLF the next time Git touches it
+== ARCHITECTURE.md changed (outside the allowed paths)
+FAIL: files changed outside the allowed paths since c7b8929a5610b9505234034b63e58a9a9f418bb3
+warning: in the working copy of 'spark-job/src/test/resources/hbase-site.xml', LF will be replaced by CRLF the next time Git touches it
+== an existing test edited (spark-job/src/test/resources/hbase-site.xml)
+FAIL: files changed outside the allowed paths since c7b8929a5610b9505234034b63e58a9a9f418bb3
+warning: in the working copy of 'spark-job/src/main/scala/com/example/salesbatch/spark/SalesAggregator.scala', LF will be replaced by CRLF the next time Git touches it
+== a second setting added in SalesAggregator.scala
+FAIL: spark-job/src/main/scala/com/example/salesbatch/spark/SalesAggregator.scala changes more than the one setting
+warning: in the working copy of 'spark-job/src/main/scala/com/example/salesbatch/spark/SalesAggregator.scala', LF will be replaced by CRLF the next time Git touches it
+== the setting flipped to true
+FAIL: spark-job/src/main/scala/com/example/salesbatch/spark/SalesAggregator.scala does not set spark.hadoopRDD.ignoreEmptySplits to false

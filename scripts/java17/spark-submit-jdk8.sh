@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Card SBJ17-9. A stand-in for spark-submit, for running the production WorkflowServer on JDK 17 while the Scala job
-# (Spark 2.4.8) still needs JDK 8. The server's ProcessSparkJobLauncher calls it as
+# (Spark 3.5.5, Scala 2.12, since card SBJ17-11) is built and tested on JDK 8. The server's ProcessSparkJobLauncher calls it as
 #   spark-submit-jdk8.sh --class <main class> --master local[*] [--files <hbase-site>] <jar> <businessDate>
 # and it runs <main class> on JAVA8_HOME's java with local[*] and the spark-job classpath, the same command the
 # test launcher LocalJvmSparkJobLauncher builds. Run from the repository root (the server's working directory).

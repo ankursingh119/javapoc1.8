@@ -1,6 +1,6 @@
 # CI for common, spark-job and workflow-app (ui/ is out of scope). Card SBJ17-2, docs/cards/SBJ17-2.md.
 # jdk8 is the job to make the required status check on main. jdk17 builds and tests common and workflow-app only
-# (spark-job stays on JDK 8 and Spark 2.4 until its own card, SBJ17-9); it stays allowed to fail until a person
+# (spark-job is built and tested on JDK 8, on Spark 3.5 and Scala 2.12 since SBJ17-11); it stays allowed to fail until a person
 # makes it required.
 # Every run step is one line: scripts/ci/acceptance/AC2 and AC4 read them line by line.
 # AC1, AC2, AC4 and AC5 check card SBJ17-2 itself (workflow shape, src/ unchanged), so they run only on that card's
@@ -11,6 +11,11 @@
 # Card SBJ17-9 (docs/cards/SBJ17-9.md): scripts/java17/acceptance AC1 to AC7. AC1, AC3 and AC4 run in the JDK 17
 # job (AC4 runs the production server on JDK 17, its Spark job on JDK 8, and compares with docs/reference/); AC2, AC3
 # and AC6 in the JDK 8 job; AC5 and AC7 (this card's own paths) on that card's branch and pull request only.
+# Card SBJ17-11 (docs/cards/SBJ17-11.md): scripts/spark35/acceptance AC1 to AC5, all in the JDK 8 job. AC1 to AC4 are
+# lasting guards (Spark 3.5 and Scala 2.12 build, reference reports and sales_agg, Java 8 class files, the local
+# cluster image and the words); AC5 (this card's own paths) runs on that card's branch and pull request only.
+# scripts/spark35/cluster runs the job on the local Docker Spark cluster (master and two workers) on the reference
+# dates and checks sales_agg; it runs last because it empties sales_agg first.
 # Two workflow-app tests are timing-sensitive: a rare red run is expected, and failed tests are never retried.
 name: CI
 
@@ -73,6 +78,20 @@ jobs:
         run: bash scripts/java17/acceptance/AC5_tests_unchanged.sh
       - if: (success() || failure()) && (github.ref_name == 'card/SBJ17-9-common-workflow-java17' || github.head_ref == 'card/SBJ17-9-common-workflow-java17')
         run: bash scripts/java17/acceptance/AC7_paths_allowed.sh
+      - if: success() || failure()
+        run: bash scripts/spark35/acceptance/AC1_jdk8_build_on_spark35.sh
+      - if: success() || failure()
+        env:
+          REFERENCE_COMPARE: ${{ steps.reference_compare.outcome }}
+        run: bash scripts/spark35/acceptance/AC2_reference_reports_and_sales_agg.sh
+      - if: success() || failure()
+        run: bash scripts/spark35/acceptance/AC3_spark_job_java8.sh
+      - if: success() || failure()
+        run: bash scripts/spark35/acceptance/AC4_docker_spark35_and_words.sh
+      - if: (success() || failure()) && (github.ref_name == 'card/SBJ17-11-spark35-scala212' || github.head_ref == 'card/SBJ17-11-spark35-scala212')
+        run: bash scripts/spark35/acceptance/AC5_paths_allowed.sh
+      - if: success() || failure()
+        run: bash scripts/spark35/cluster/run_job_on_docker_cluster.sh
       - if: failure()
         run: docker logs --tail 300 sales-hbase
       - if: always()
@@ -86,6 +105,12 @@ jobs:
         with:
           name: reference-run-jdk8
           path: target/reference-run/
+          if-no-files-found: ignore
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: spark35-cluster-run
+          path: target/spark35-cluster/
           if-no-files-found: ignore
 
   jdk17:
