@@ -31,7 +31,8 @@
       <scope>provided</scope>
     </dependency>
 
-    <!-- HBase client is NOT on Spark's classpath on EMR, so it is bundled (Guava relocated, Hadoop left out) -->
+    <!-- The HBase client is NOT on Spark's classpath on EMR, so it is bundled (Guava relocated, Hadoop left out).
+         HBase 2 keeps TableInputFormat in hbase-mapreduce (card SBJ17-14). -->
     <dependency>
       <groupId>com.example.salesbatch</groupId>
       <artifactId>common</artifactId>
@@ -41,7 +42,7 @@
     </dependency>
     <dependency>
       <groupId>org.apache.hbase</groupId>
-      <artifactId>hbase-server</artifactId>
+      <artifactId>hbase-mapreduce</artifactId>
       <version>${hbase.version}</version>
       <exclusions>
         <exclusion><groupId>org.apache.hadoop</groupId><artifactId>*</artifactId></exclusion>
