@@ -25,7 +25,7 @@
     <scala.version>2.12.18</scala.version>
     <scala.binary.version>2.12</scala.binary.version>
     <spark.version>3.5.5</spark.version>
-    <hbase.version>1.4.13</hbase.version>
+    <hbase.version>2.5.10</hbase.version>
     <hadoop.version>2.10.1</hadoop.version>
     <!-- Spring 5.3, the javax line (card SBJ17-9). Spring 6 leaves javax and needs JDK 17 class files: not this card. -->
     <spring.version>5.3.39</spring.version>
