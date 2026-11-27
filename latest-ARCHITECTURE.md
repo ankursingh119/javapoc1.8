@@ -322,7 +322,7 @@ flowchart LR
 
 ## 10. How the local setup simulates EMR (for reference)
 
-The target platform is **Amazon EMR 5.36**. Nothing here runs on EMR, and the EMR behaviour of this app has **never been tested**. The local Docker setup is a stand-in that matches EMR's software versions and its general shape, so the same code and the same Spark jar can be exercised, but it is not an EMR emulator.
+The target platform is **Amazon EMR 5.36**. Nothing here runs on EMR, and the EMR behaviour of this app has **never been tested**. The local Docker setup is a stand-in that keeps EMR's general shape (a master, executors, an HBase cluster), so the same code and the same Spark jar can be exercised, but it does not match EMR 5.36's software versions (it runs Spark 3.5 and HBase 2, where EMR 5.36 runs Spark 2 and HBase 1; see the table below) and it is not an EMR emulator.
 
 ### Mapping: EMR piece and its local stand-in
 
@@ -333,7 +333,7 @@ flowchart LR
         E_MASTER["Master node<br/>runs the Java app and spark-submit<br/>/etc/hbase/conf/hbase-site.xml"]
         E_YARN["YARN ResourceManager<br/>and NodeManagers"]
         E_EXEC["Core / task nodes<br/>Spark executors"]
-        E_HB[("HBase 2<br/>root dir on HDFS or S3<br/>ZooKeeper on the master")]
+        E_HB[("HBase (HBase 1 on EMR 5.36;<br/>the client now needs HBase 2)<br/>root dir on HDFS or S3<br/>ZooKeeper on the master")]
         E_S3[("S3 / EMRFS<br/>input and output files")]
         E_IAM["IAM, VPC, security groups"]
     end
