@@ -27,6 +27,6 @@ if [ -n "${SPARK_STANDIN_LOG:-}" ]; then
   { echo "args: $*"; "$java8" -version 2>&1; } >> "$SPARK_STANDIN_LOG"
 fi
 
-exec "$java8" -Dspark.master='local[*]' -Dspark.ui.enabled=false \
+exec "$java8" -Dspark.master='local[*]' -Dspark.ui.enabled=false -Dspark.hadoopRDD.ignoreEmptySplits=false \
   -Dspark.driver.host=127.0.0.1 -Dspark.driver.bindAddress=127.0.0.1 \
   -cp "$conf:$classes:$(cat "$cpfile")" "$main" "$date"
