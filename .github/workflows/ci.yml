@@ -14,6 +14,8 @@
 # Card SBJ17-11 (docs/cards/SBJ17-11.md): scripts/spark35/acceptance AC1 to AC5, all in the JDK 8 job. AC1 to AC4 are
 # lasting guards (Spark 3.5 and Scala 2.12 build, reference reports and sales_agg, Java 8 class files, the local
 # cluster image and the words); AC5 (this card's own paths) runs on that card's branch and pull request only.
+# scripts/spark35/cluster runs the job on the local Docker Spark cluster (master and two workers) on the reference
+# dates and checks sales_agg; it runs last because it empties sales_agg first.
 # Two workflow-app tests are timing-sensitive: a rare red run is expected, and failed tests are never retried.
 name: CI
 
@@ -88,6 +90,8 @@ jobs:
         run: bash scripts/spark35/acceptance/AC4_docker_spark35_and_words.sh
       - if: (success() || failure()) && (github.ref_name == 'card/SBJ17-11-spark35-scala212' || github.head_ref == 'card/SBJ17-11-spark35-scala212')
         run: bash scripts/spark35/acceptance/AC5_paths_allowed.sh
+      - if: success() || failure()
+        run: bash scripts/spark35/cluster/run_job_on_docker_cluster.sh
       - if: failure()
         run: docker logs --tail 300 sales-hbase
       - if: always()
@@ -101,6 +105,12 @@ jobs:
         with:
           name: reference-run-jdk8
           path: target/reference-run/
+          if-no-files-found: ignore
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: spark35-cluster-run
+          path: target/spark35-cluster/
           if-no-files-found: ignore
 
   jdk17:
