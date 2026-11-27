@@ -31,7 +31,7 @@ compose=(docker compose -f docker/local/docker-compose.yml)
 
 workers=0
 for _ in $(seq 1 90); do
-  workers=$(curl -s http://localhost:8090/json/ | tr -d ' \n' | sed -nE 's/.*"aliveworkers":([0-9]+).*/\1/p')
+  workers=$( (curl -s http://localhost:8090/json/ || true) | tr -d ' \n' | sed -nE 's/.*"aliveworkers":([0-9]+).*/\1/p')
   [ "${workers:-0}" -ge 2 ] && break
   sleep 2
 done
