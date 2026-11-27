@@ -8,7 +8,11 @@ This is the up-to-date description of the app as it is built now. It replaces th
 - workflow state in H2 (memory or file) or **Postgres**;
 - an optional **Spark standalone cluster in Docker** (1 master, 2 workers) next to the default local Spark;
 - the VS Code debug setup for Java and Scala, and how **Metals and Bloop** make Scala breakpoints work (section 14);
-- how the local setup relates to **EMR 5.36** (section 10, for reference).
+- how the local setup relates to **EMR** (section 10, for reference).
+
+Versions the build uses: the server on Java 17 (Java 8 class files, Spring 5.3), the Spark job on Java 8 (Spark 3.5, Scala 2.12), and HBase 2 (the 2.5 client, an HBase 2 server in Docker).
+
+**Production cluster:** EMR 5.36 runs neither Spark 3.5 nor an HBase 2 server, so the production cluster must move off EMR 5.36 before any release. No target EMR release is chosen yet.
 
 For how a much larger dataset would be handled, see [Large-App-ARCHITECTURE.md](Large-App-ARCHITECTURE.md). For setup steps, see [README.md](README.md).
 
@@ -43,8 +47,8 @@ flowchart TB
 
     subgraph DOCKER["Docker (Rancher Desktop)"]
         subgraph STACK["docker/local/docker-compose.yml"]
-            HB[("HBase 1.4<br/>ZK 2181, master 16000,<br/>region server 16020, UI 16011")]
-            SM["spark-master<br/>Spark 2.4.8<br/>UI 8090, driver JDWP 5006"]
+            HB[("HBase 2<br/>ZK 2181, master 16000,<br/>region server 16020, UI 16011")]
+            SM["spark-master<br/>Spark 3.5.5<br/>UI 8090, driver JDWP 5006"]
             SW1["spark-worker-1<br/>2 cores, 1 GB"]
             SW2["spark-worker-2<br/>2 cores, 1 GB"]
         end
@@ -76,7 +80,7 @@ Besides the IDE setup above, the project can be started with nothing but Docker:
 flowchart LR
     B["Browser<br/>http://localhost:8080"] --> N["ui container<br/>nginx: Angular page<br/>forwards /batches, /data, /docs"]
     N -->|"HTTP"| A["app container<br/>Java app + Spark local[*]<br/>(spark-submit inside the container)"]
-    A -->|"hbase client, name hbase"| H[("hbase container<br/>HBase 1.4 + ZooKeeper")]
+    A -->|"hbase client, name hbase"| H[("hbase container<br/>HBase 2 + ZooKeeper")]
     A --> R[/"./reports on the host"/]
     A --- V[("volume app-data<br/>workflow state, H2 file")]
 ```
@@ -97,9 +101,9 @@ flowchart LR
         UI["Upload, status polling,<br/>approve, HBase data tables"]
     end
 
-    subgraph APPM["workflow-app (Java 8, one JVM)"]
+    subgraph APPM["workflow-app (runs on Java 17, one JVM)"]
         JET["Jetty 9.4.44"]
-        MVC["Spring MVC 4.3.30<br/>BatchController, DataController<br/>Jackson 2.9.10.8"]
+        MVC["Spring MVC 5.3.39<br/>BatchController, DataController<br/>Jackson 2.9.10.8"]
         ACT["Activiti 5.22<br/>BPMN engine + job executor<br/>async: ingest, Spark"]
         DEL["Delegates: Ingest, SparkJob,<br/>Publish, Reject<br/>AuditStartListener, RunFailure"]
         LAUNCH["SparkJobLauncher<br/>ProcessSparkJobLauncher (spark-submit)<br/>LocalJvm / DockerCluster (IDE only)"]
@@ -108,14 +112,14 @@ flowchart LR
     end
 
     subgraph COMM["common"]
-        REPO["HBaseSalesRepository<br/>hbase-client 1.4.13<br/>RowKeys, SalesSchema, HBaseTables"]
+        REPO["HBaseSalesRepository<br/>hbase-client 2.5.10<br/>RowKeys, SalesSchema, HBaseTables"]
     end
 
-    subgraph SPM["spark-job (Scala 2.11.12)"]
-        AGG["SalesAggregator<br/>Spark 2.4.8, Hadoop 2.10.1 (provided)<br/>hbase-server 1.4.13 (bundled, Guava relocated)"]
+    subgraph SPM["spark-job (Scala 2.12.18, Java 8)"]
+        AGG["SalesAggregator<br/>Spark 3.5.5, Hadoop 2.10.1 (provided)<br/>hbase-mapreduce 2.5.10 (bundled, Guava relocated)"]
     end
 
-    HB[("HBase 1.4<br/>sales_raw, sales_agg, batch_audit")]
+    HB[("HBase 2<br/>sales_raw, sales_agg, batch_audit")]
 
     UI -->|"HTTP"| JET --> MVC
     SWG -.-> JET
@@ -136,20 +140,20 @@ flowchart LR
 |---|---|---|---|
 | Angular | 20 | ui | The browser UI (needs Node 20.19+) |
 | Jetty | 9.4.44 | workflow-app | Embedded web server (no Tomcat or WAR) |
-| Spring MVC | 4.3.30 | workflow-app | REST endpoints, multipart upload |
+| Spring MVC | 5.3.39 | workflow-app | REST endpoints, multipart upload |
 | Jackson | 2.9.10.8 | workflow-app | JSON for REST |
 | Activiti | 5.22.0 | workflow-app | BPMN workflow, human approval task, background job executor |
 | H2 | 1.4.197 | workflow-app | Default workflow database (memory), or a file in the IDE debug server |
 | PostgreSQL JDBC | 42.7.4 | workflow-app | Optional workflow database |
 | Swagger UI webjar | 3.52.5 | workflow-app | API docs page |
 | logback, slf4j | 1.2.3, 1.7.30 | workflow-app | Logging |
-| hbase-client | 1.4.13 | common | Reads and writes the HBase tables |
-| Spark core | 2.4.8 | spark-job | Aggregation. `provided`: the cluster supplies it |
+| hbase-client | 2.5.10 | common | Reads and writes the HBase tables |
+| Spark core | 3.5.5 | spark-job | Aggregation. `provided`: the cluster supplies it |
 | Hadoop client | 2.10.1 | spark-job | `provided` |
-| Scala | 2.11.12 | spark-job | Language of the job. `provided` |
-| hbase-server | 1.4.13 | spark-job | HBase input format for Spark. Bundled in the fat jar, because EMR does not put HBase on Spark's classpath |
-| HBase | 1.4 (container `harisekhon/hbase:1.4`) | external | Storage for rows, aggregates, run status |
-| Spark standalone | 2.4.8 (image `salesbatch-runtime`) | external (Docker) | Optional cluster: 1 master, 2 workers |
+| Scala | 2.12.18 | spark-job | Language of the job (Java 8 class files). `provided` |
+| hbase-mapreduce | 2.5.10 | spark-job | HBase input format for Spark. Bundled in the fat jar, because EMR does not put HBase on Spark's classpath |
+| HBase | 2 (container `harisekhon/hbase:2.1`) | external | Storage for rows, aggregates, run status |
+| Spark standalone | 3.5.5 (image `salesbatch-runtime`) | external (Docker) | Optional cluster: 1 master, 2 workers |
 | PostgreSQL | 17 (existing container) | external (Docker) | Optional workflow database |
 
 ## 4. The workflow (BPMN)
@@ -329,7 +333,7 @@ flowchart LR
         E_MASTER["Master node<br/>runs the Java app and spark-submit<br/>/etc/hbase/conf/hbase-site.xml"]
         E_YARN["YARN ResourceManager<br/>and NodeManagers"]
         E_EXEC["Core / task nodes<br/>Spark executors"]
-        E_HB[("HBase 1.4.13<br/>root dir on HDFS or S3<br/>ZooKeeper on the master")]
+        E_HB[("HBase 2<br/>root dir on HDFS or S3<br/>ZooKeeper on the master")]
         E_S3[("S3 / EMRFS<br/>input and output files")]
         E_IAM["IAM, VPC, security groups"]
     end
@@ -339,7 +343,7 @@ flowchart LR
         L_APP["Java app in VS Code (host)<br/>+ docker exec spark-submit<br/>hbase-site.xml in test resources"]
         L_SM["Spark standalone master<br/>(container spark-master)"]
         L_SW["Two Spark workers<br/>(containers, 2 cores, 1 GB)"]
-        L_HB[("HBase 1.4 container<br/>local disk, embedded ZooKeeper")]
+        L_HB[("HBase 2 container<br/>local disk, embedded ZooKeeper")]
         L_FS[("Local disk<br/>temp uploads, reports folder")]
         L_NONE["Not simulated"]
     end
@@ -354,7 +358,7 @@ flowchart LR
 
 | EMR piece | Local stand-in | How faithful |
 |---|---|---|
-| **Software versions**: Spark 2.4.8, HBase 1.4.13, Hadoop 2.10.1, Scala 2.11.12, Java 8 | The same versions in the Maven build and in the HBase and Spark images | **High** for the app and job code. One small difference: the Docker Spark image bundles Hadoop 2.7 libraries, while EMR has Hadoop 2.10 |
+| **Software versions**: the build uses Spark 3.5.5, Scala 2.12.18, an HBase 2.5 client, Hadoop 2.10.1 and Java 8 for the job | The same Spark and Scala in the Maven build and the Spark image; an HBase 2 server image | **Not matched today**: EMR 5.36 runs Spark 2 and HBase 1, so the production cluster must move off EMR 5.36 before any release. The Docker Spark image bundles Hadoop 3 libraries |
 | **Master node** runs the app and calls `spark-submit` | The app runs in VS Code on your PC and runs `docker exec spark-master spark-submit` | **Medium**: same roles, different place |
 | **YARN** schedules containers on the nodes | A Spark **standalone** master and workers | **Low to medium**: the Spark application code is identical, but the scheduler is different (see below) |
 | **Core and task nodes** run executors | Containers `spark-worker-1` and `spark-worker-2` (2 cores and 1 GB each) | **Medium**: real separate executor processes, but tiny and on one machine |
@@ -369,7 +373,7 @@ flowchart LR
 | **Scale**: many nodes with many cores and gigabytes | Your PC's CPUs and RAM, shared with everything else | **Not comparable** |
 
 ### What the simulation is good for
-- Running the **same Scala job and the same fat jar** as EMR, against a real HBase 1.4 and real Spark 2.4.8.
+- Running the **same Scala job and the same fat jar** as EMR, against a real HBase 2 and real Spark 3.5.
 - Seeing the code and data **cross real process boundaries** (driver to executors), which `local[*]` hides: serialization errors, missing classes in the jar, and configuration that only exists on the driver.
 - Checking that the **launcher contract holds**: `spark-submit` blocks until the job ends, and a non-zero exit code makes the run `FAILED`.
 
@@ -454,7 +458,7 @@ Metals never compiles anything itself. It asks Bloop, using the Build Server Pro
 
 ```mermaid
 flowchart LR
-    MVN["Maven import<br/>(maven-bloop plugin)"] -->|"writes"| BF[".bloop/*.json<br/>one file per module:<br/>classpath, sources,<br/>Scala 2.11.12, JDK 8, dependencies"]
+    MVN["Maven import<br/>(maven-bloop plugin)"] -->|"writes"| BF[".bloop/*.json<br/>one file per module:<br/>classpath, sources,<br/>Scala 2.12.18, JDK 8, dependencies"]
     FIX["scripts/fix-bloop.js<br/>(workaround)"] -->|"edits"| BF
     BF -->|"read by"| BL["Bloop<br/>build server<br/>(Zinc incremental compiler)"]
     VS["VS Code<br/>+ Metals extension"] <-->|"LSP"| MT["Metals<br/>language server"]
@@ -514,7 +518,7 @@ sequenceDiagram
 ### Behaviours to know
 
 - **Shared output folder.** Bloop writes into the same `spark-job/target/classes` that Maven uses, so the two builds overwrite each other's class files. The Docker cluster mode uses the Maven fat jar, not that folder.
-- **Old Scala version.** Scala 2.11.12 is no longer supported by current Metals. The Metals log says it falls back to an older presentation compiler, so editor features such as completion may be limited. The build itself (Bloop compiling with 2.11.12) works.
+- **Scala version.** The job is on Scala 2.12.18, which current Metals supports.
 - **Breakpoint limits.** Metals attaches to one JVM. In `local-jvm` mode that JVM runs the driver and the tasks. In `docker-cluster` mode it is only the driver, so code inside Spark tasks (the `map` and `foreachPartition` bodies) does not hit. See section 9.
 
 ### When to redo what
@@ -543,7 +547,7 @@ sequenceDiagram
 
 - **Debug pauses and the job lock.** Activiti locks a background job for 5 minutes by default. Sitting at a breakpoint longer than that may let the engine start the same Ingest or Spark step again.
 - **Breakpoints inside Spark tasks** only work in `local-jvm` mode. In `docker-cluster` mode that code runs on the workers.
-- **Scala breakpoints depend on a workaround.** The Bloop import must be patched with `node scripts/fix-bloop.js` after every re-import (section 14). Scala 2.11.12 is no longer supported by current Metals, so editor features are limited, although the build and the debugger work.
+- **Scala breakpoints depend on a workaround.** The Bloop import must be patched with `node scripts/fix-bloop.js` after every re-import (section 14).
 - **Fat jar for the cluster.** The cluster runs the packaged jar. After Scala changes run `mvn -pl spark-job -am package -DskipTests`.
 - **The Java app still parses the CSV and writes `sales_raw` itself.** That does not scale to very large files; Spark should read the file directly (see the large-app document).
 - **Reruns of the same business date** have not been verified. Use a new date for each test.

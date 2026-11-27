@@ -2,17 +2,19 @@
 
 A sales-batch workflow application. You upload a sales CSV, and the app:
 
-1. loads it into **HBase 1.4**,
+1. loads it into **HBase 2**,
 2. runs a **Spark 3.5 (Scala 2.12)** job that aggregates it,
 3. waits for a **manager approval**,
 4. writes `report-<businessDate>.csv`.
 
 | Layer | Technology |
 |---|---|
-| API and workflow | Java 8 class files, runs on Java 8 or 17; Spring MVC 5.3, Activiti 5.22, embedded Jetty 9.4 |
-| Batch job | Scala 2.12 on Spark 3.5.5, Java 8 class files (the production cluster must move to an EMR release with Spark 3.5 before release) |
-| Storage | HBase 1.4 (runs in Docker) |
+| API and workflow | Java 8 class files, runs on Java 17 in production (Java 8 also works); Spring 5.3 (Spring MVC), Activiti 5.22, embedded Jetty 9.4 |
+| Batch job | Scala 2.12 on Spark 3.5.5, Java 8 class files |
+| Storage | HBase 2 (client 2.5; the server runs in Docker locally) |
 | UI | Angular 20 |
+
+**Production cluster:** EMR 5.36 runs neither Spark 3.5 nor an HBase 2 server, so the production cluster must move off EMR 5.36 before any release. No target EMR release is chosen yet.
 
 This README gets you from a clean machine to a running, debuggable system in VS Code.
 For design details see [ARCHITECTURE.md](ARCHITECTURE.md).
@@ -418,7 +420,7 @@ Defaults are in `workflow-app/src/main/resources/application.properties`. Overri
 
 The local debug app reads its HBase address from `workflow-app/src/test/resources/hbase-site.xml`. HBase advertises the name `host.docker.internal`, which Docker Desktop and Rancher Desktop add to your hosts file. If it does not resolve, add `127.0.0.1 host.docker.internal` to `C:\Windows\System32\drivers\etc\hosts` (as administrator).
 
-### Running on EMR (emr-5.36 with Spark and HBase)
+### Running on EMR (an EMR release with Spark 3.5 and HBase 2, not yet chosen)
 
 ```
 java -Dserver.port=8080 \
