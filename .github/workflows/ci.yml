@@ -6,6 +6,9 @@
 # test runs, not skips) is a lasting guard and runs on every build.
 # Card SBJ17-8 (docs/cards/SBJ17-8.md): scripts/reference/acceptance AC1 to AC4 guard the reference reports on every
 # build (AC4 runs the app on the three sample files and compares with docs/reference/); AC5 runs on that card only.
+# Card SBJ17-9 (docs/cards/SBJ17-9.md): scripts/java17/acceptance AC1 to AC7. AC1, AC3 and AC4 run in the JDK 17
+# job (AC4 runs the production server on JDK 17, its Spark job on JDK 8, and compares with docs/reference/); AC2, AC3
+# and AC6 in the JDK 8 job; AC5 and AC7 (this card's own paths) on that card's branch and pull request only.
 # Two workflow-app tests are timing-sensitive: a rare red run is expected, and failed tests are never retried.
 name: CI
 
@@ -43,8 +46,10 @@ jobs:
       - run: mvn -B test
       - if: github.ref_name == 'SBJ17-2' || github.head_ref == 'SBJ17-2'
         run: bash scripts/ci/acceptance/AC2_jdk8_job_installs_then_tests.sh
-      - run: bash scripts/ci/acceptance/AC3_hbase_end_to_end_test_runs.sh
-      - run: bash scripts/reference/acceptance/AC4_compare_with_reference.sh
+      - id: hbase_e2e
+        run: bash scripts/ci/acceptance/AC3_hbase_end_to_end_test_runs.sh
+      - id: reference_compare
+        run: bash scripts/reference/acceptance/AC4_compare_with_reference.sh
       - if: success() || failure()
         run: bash scripts/reference/acceptance/AC1_reference_reports_committed.sh
       - if: success() || failure()
@@ -53,6 +58,19 @@ jobs:
         run: bash scripts/reference/acceptance/AC3_bad_file_outcome_recorded.sh
       - if: (success() || failure()) && (github.ref_name == 'card/SBJ17-8-reference-reports' || github.head_ref == 'card/SBJ17-8-reference-reports')
         run: bash scripts/reference/acceptance/AC5_tests_and_src_unchanged.sh
+      - if: success() || failure()
+        env:
+          HBASE_E2E: ${{ steps.hbase_e2e.outcome }}
+          REFERENCE_COMPARE: ${{ steps.reference_compare.outcome }}
+        run: bash scripts/java17/acceptance/AC2_jdk8_whole_build_passes.sh
+      - if: success() || failure()
+        run: bash scripts/java17/acceptance/AC3_common_targets_java8.sh
+      - if: success() || failure()
+        run: bash scripts/java17/acceptance/AC6_javax_kept.sh
+      - if: (success() || failure()) && (github.ref_name == 'card/SBJ17-9-common-workflow-java17' || github.head_ref == 'card/SBJ17-9-common-workflow-java17')
+        run: bash scripts/java17/acceptance/AC5_tests_unchanged.sh
+      - if: (success() || failure()) && (github.ref_name == 'card/SBJ17-9-common-workflow-java17' || github.head_ref == 'card/SBJ17-9-common-workflow-java17')
+        run: bash scripts/java17/acceptance/AC7_paths_allowed.sh
       - if: failure()
         run: docker logs --tail 300 sales-hbase
       - if: always()
@@ -78,6 +96,10 @@ jobs:
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
+          java-version: '8'
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
           java-version: '17'
           cache: maven
       - run: echo "127.0.0.1 host.docker.internal" | sudo tee -a /etc/hosts
@@ -85,6 +107,14 @@ jobs:
       - run: bash scripts/ci/wait-for-hbase.sh 300
       - run: mvn -B install
       - run: mvn -B test
+      - if: success() || failure()
+        run: bash scripts/java17/acceptance/AC1_jdk17_build_and_tests_pass.sh
+      - if: success() || failure()
+        run: bash scripts/java17/acceptance/AC3_common_targets_java8.sh
+      - if: success() || failure()
+        run: JAVA_HOME=$JAVA_HOME_8_X64 mvn -B -pl spark-job -DskipTests package dependency:build-classpath -Dmdep.outputFile=target/local-classpath.txt
+      - if: success() || failure()
+        run: JAVA8_HOME=$JAVA_HOME_8_X64 bash scripts/java17/acceptance/AC4_workflow_server_on_jdk17_matches_reference.sh
       - if: failure()
         run: docker logs --tail 300 sales-hbase
       - if: always()
@@ -92,4 +122,10 @@ jobs:
         with:
           name: surefire-reports-jdk17
           path: '**/target/surefire-reports/'
+          if-no-files-found: ignore
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: java17-run
+          path: target/java17-run/
           if-no-files-found: ignore
