@@ -35,7 +35,7 @@ object SalesAggregator {
     val date = args(0)
 
     val sc = new SparkContext(new SparkConf().setAppName("SalesAggregator-" + date)
-      .set("spark.hadoopRDD.ignoreEmptySplits", "false"))
+      )
     try {
       val aggregated = aggregate(readRaw(sc, date))
       val written = writeAgg(sc, aggregated)
