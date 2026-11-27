@@ -25,7 +25,7 @@
     <spark.version>2.4.8</spark.version>
     <hbase.version>1.4.13</hbase.version>
     <hadoop.version>2.10.1</hadoop.version>
-    <!-- Spring 5.3, the javax line (card SBJ17-9). Spring 6 needs Jakarta EE and JDK 17 class files: not this card. -->
+    <!-- Spring 5.3, the javax line (card SBJ17-9). Spring 6 leaves javax and needs JDK 17 class files: not this card. -->
     <spring.version>5.3.39</spring.version>
     <activiti.version>5.22.0</activiti.version>
     <jackson.version>2.9.10.8</jackson.version>
