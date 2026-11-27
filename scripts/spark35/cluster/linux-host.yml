@@ -1,0 +1,9 @@
+# Added to docker/local/docker-compose.yml on Linux only (the pipeline's runner): Docker Desktop and Rancher Desktop
+# resolve host.docker.internal inside containers by themselves, plain Docker on Linux does not. Card SBJ17-11.
+services:
+  spark-master:
+    extra_hosts: ["host.docker.internal:host-gateway"]
+  spark-worker-1:
+    extra_hosts: ["host.docker.internal:host-gateway"]
+  spark-worker-2:
+    extra_hosts: ["host.docker.internal:host-gateway"]
