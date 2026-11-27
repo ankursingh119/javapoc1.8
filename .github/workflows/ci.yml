@@ -16,6 +16,10 @@
 # cluster image and the words); AC5 (this card's own paths) runs on that card's branch and pull request only.
 # scripts/spark35/cluster runs the job on the local Docker Spark cluster (master and two workers) on the reference
 # dates and checks sales_agg; it runs last because it empties sales_agg first.
+# Card SBJ17-14 (docs/cards/SBJ17-14.md): scripts/hbase2/acceptance AC1 to AC5. AC1, AC3 and AC4 in the JDK 8 job
+# (HBase 2 client and server, no HBase 1.x left, documents name today's versions); AC2 in both jobs after the runs it
+# reads (JDK 8: reference compare and cluster run; JDK 17: the production server compare); AC5 (this card's own
+# paths) on that card's branch and pull request only. All but AC5 are lasting guards.
 # Two workflow-app tests are timing-sensitive: a rare red run is expected, and failed tests are never retried.
 name: CI
 
@@ -91,7 +95,22 @@ jobs:
       - if: (success() || failure()) && (github.ref_name == 'card/SBJ17-11-spark35-scala212' || github.head_ref == 'card/SBJ17-11-spark35-scala212')
         run: bash scripts/spark35/acceptance/AC5_paths_allowed.sh
       - if: success() || failure()
+        run: bash scripts/hbase2/acceptance/AC1_jdk8_build_on_hbase2.sh
+      - if: success() || failure()
+        run: bash scripts/hbase2/acceptance/AC3_no_hbase1_left.sh
+      - if: success() || failure()
+        run: bash scripts/hbase2/acceptance/AC4_documents_name_current_versions.sh
+      - if: (success() || failure()) && (github.ref_name == 'card/SBJ17-14-hbase2' || github.head_ref == 'card/SBJ17-14-hbase2')
+        run: bash scripts/hbase2/acceptance/AC5_paths_allowed.sh
+      - id: cluster_run
+        if: success() || failure()
         run: bash scripts/spark35/cluster/run_job_on_docker_cluster.sh
+      - if: success() || failure()
+        env:
+          AC2_JOB: jdk8
+          REFERENCE_COMPARE: ${{ steps.reference_compare.outcome }}
+          CLUSTER_RUN: ${{ steps.cluster_run.outcome }}
+        run: bash scripts/hbase2/acceptance/AC2_reference_reports_on_hbase2.sh
       - if: failure()
         run: docker logs --tail 300 sales-hbase
       - if: always()
@@ -140,8 +159,14 @@ jobs:
         run: bash scripts/java17/acceptance/AC3_common_targets_java8.sh
       - if: success() || failure()
         run: JAVA_HOME=$JAVA_HOME_8_X64 mvn -B -pl spark-job -DskipTests package dependency:build-classpath -Dmdep.outputFile=target/local-classpath.txt
-      - if: success() || failure()
+      - id: server_compare
+        if: success() || failure()
         run: JAVA8_HOME=$JAVA_HOME_8_X64 bash scripts/java17/acceptance/AC4_workflow_server_on_jdk17_matches_reference.sh
+      - if: success() || failure()
+        env:
+          AC2_JOB: jdk17
+          SERVER_COMPARE: ${{ steps.server_compare.outcome }}
+        run: bash scripts/hbase2/acceptance/AC2_reference_reports_on_hbase2.sh
       - if: failure()
         run: docker logs --tail 300 sales-hbase
       - if: always()
