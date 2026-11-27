@@ -25,7 +25,8 @@
     <spark.version>2.4.8</spark.version>
     <hbase.version>1.4.13</hbase.version>
     <hadoop.version>2.10.1</hadoop.version>
-    <spring.version>4.3.30.RELEASE</spring.version>
+    <!-- Spring 5.3, the javax line (card SBJ17-9). Spring 6 leaves javax and needs JDK 17 class files: not this card. -->
+    <spring.version>5.3.39</spring.version>
     <activiti.version>5.22.0</activiti.version>
     <jackson.version>2.9.10.8</jackson.version>
     <jetty.version>9.4.44.v20210927</jetty.version>
@@ -107,4 +108,29 @@
       </plugins>
     </pluginManagement>
   </build>
+
+  <profiles>
+    <!-- Built on JDK 9 or later (the JDK 17 job), javac gets release 8: Java 8 class files, as spark-job on JDK 8
+         and Spark 2.4 need for common, and any JDK 9+ API is refused at compile time. On JDK 8, source and target
+         1.8 as before. Card SBJ17-9, docs/cards/SBJ17-9.md. -->
+    <profile>
+      <id>release-8-on-jdk9-plus</id>
+      <activation>
+        <jdk>[9,)</jdk>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-compiler-plugin</artifactId>
+              <configuration>
+                <release>8</release>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+  </profiles>
 </project>
