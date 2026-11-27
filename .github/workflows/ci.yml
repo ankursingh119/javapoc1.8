@@ -1,6 +1,9 @@
 # CI for common, spark-job and workflow-app (ui/ is out of scope). Card SBJ17-2, docs/cards/SBJ17-2.md.
 # jdk8 is the job to make the required status check on main. jdk17 runs the same commands and may fail for now.
 # Every run step is one line: scripts/ci/acceptance/AC2 and AC4 read them line by line.
+# AC1, AC2, AC4 and AC5 check card SBJ17-2 itself (workflow shape, src/ unchanged), so they run only on that card's
+# branch and pull request; later cards that change src/ or the jobs are not held to them. AC3 (the HBase end-to-end
+# test runs, not skips) is a lasting guard and runs on every build.
 # Two workflow-app tests are timing-sensitive: a rare red run is expected, and failed tests are never retried.
 name: CI
 
@@ -25,15 +28,19 @@ jobs:
           distribution: temurin
           java-version: '8'
           cache: maven
-      - run: bash scripts/ci/acceptance/AC1_workflow_runs_on_push_and_pull_request.sh
-      - run: bash scripts/ci/acceptance/AC4_jdk17_job_may_fail.sh
-      - run: bash scripts/ci/acceptance/AC5_tests_and_src_unchanged.sh
+      - if: github.ref_name == 'SBJ17-2' || github.head_ref == 'SBJ17-2'
+        run: bash scripts/ci/acceptance/AC1_workflow_runs_on_push_and_pull_request.sh
+      - if: github.ref_name == 'SBJ17-2' || github.head_ref == 'SBJ17-2'
+        run: bash scripts/ci/acceptance/AC4_jdk17_job_may_fail.sh
+      - if: github.ref_name == 'SBJ17-2' || github.head_ref == 'SBJ17-2'
+        run: bash scripts/ci/acceptance/AC5_tests_and_src_unchanged.sh
       - run: echo "127.0.0.1 host.docker.internal" | sudo tee -a /etc/hosts
       - run: docker compose -f docker/local/docker-compose.yml up -d hbase
       - run: bash scripts/ci/wait-for-hbase.sh 300
       - run: mvn -B install
       - run: mvn -B test
-      - run: bash scripts/ci/acceptance/AC2_jdk8_job_installs_then_tests.sh
+      - if: github.ref_name == 'SBJ17-2' || github.head_ref == 'SBJ17-2'
+        run: bash scripts/ci/acceptance/AC2_jdk8_job_installs_then_tests.sh
       - run: bash scripts/ci/acceptance/AC3_hbase_end_to_end_test_runs.sh
       - if: failure()
         run: docker logs --tail 300 sales-hbase
