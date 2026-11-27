@@ -11,6 +11,9 @@
 # Card SBJ17-9 (docs/cards/SBJ17-9.md): scripts/java17/acceptance AC1 to AC7. AC1, AC3 and AC4 run in the JDK 17
 # job (AC4 runs the production server on JDK 17, its Spark job on JDK 8, and compares with docs/reference/); AC2, AC3
 # and AC6 in the JDK 8 job; AC5 and AC7 (this card's own paths) on that card's branch and pull request only.
+# Card SBJ17-11 (docs/cards/SBJ17-11.md): scripts/spark35/acceptance AC1 to AC5, all in the JDK 8 job. AC1 to AC4 are
+# lasting guards (Spark 3.5 and Scala 2.12 build, reference reports and sales_agg, Java 8 class files, the local
+# cluster image and the words); AC5 (this card's own paths) runs on that card's branch and pull request only.
 # Two workflow-app tests are timing-sensitive: a rare red run is expected, and failed tests are never retried.
 name: CI
 
@@ -73,6 +76,18 @@ jobs:
         run: bash scripts/java17/acceptance/AC5_tests_unchanged.sh
       - if: (success() || failure()) && (github.ref_name == 'card/SBJ17-9-common-workflow-java17' || github.head_ref == 'card/SBJ17-9-common-workflow-java17')
         run: bash scripts/java17/acceptance/AC7_paths_allowed.sh
+      - if: success() || failure()
+        run: bash scripts/spark35/acceptance/AC1_jdk8_build_on_spark35.sh
+      - if: success() || failure()
+        env:
+          REFERENCE_COMPARE: ${{ steps.reference_compare.outcome }}
+        run: bash scripts/spark35/acceptance/AC2_reference_reports_and_sales_agg.sh
+      - if: success() || failure()
+        run: bash scripts/spark35/acceptance/AC3_spark_job_java8.sh
+      - if: success() || failure()
+        run: bash scripts/spark35/acceptance/AC4_docker_spark35_and_words.sh
+      - if: (success() || failure()) && (github.ref_name == 'card/SBJ17-11-spark35-scala212' || github.head_ref == 'card/SBJ17-11-spark35-scala212')
+        run: bash scripts/spark35/acceptance/AC5_paths_allowed.sh
       - if: failure()
         run: docker logs --tail 300 sales-hbase
       - if: always()
