@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # AC3 common's class files still target Java 8; a check in the pipeline reads their class-file version.
 # Every .class under common/target/classes must have class-file major version 52 (Java 8): spark-job, still on
-# JDK 8 and Spark 2.4.8, loads them. Runs in both jobs after the build.
+# JDK 8 (on Spark 3.5.5 and Scala 2.12 since card SBJ17-11), loads them. Runs in both jobs after the build.
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
 . scripts/java17/acceptance/lib.sh

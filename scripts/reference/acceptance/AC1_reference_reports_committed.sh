@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# AC1 report-20261113.csv and report-20261115.csv, written by today's application (Java 8, Spark 2.4.8, HBase 1.4)
+# AC1 report-20261113.csv and report-20261115.csv, written by the application of card SBJ17-8 (Java 8, HBase 1.4, before card SBJ17-11 moved the job to Spark 3.5 and Scala 2.12; the reports must not change)
 # from sample-data/sales-20261113.csv and sales-20261115.csv, are committed under docs/reference/, with the commit of
 # main they came from.
 # Checks: both reports are tracked by git, start with the header and have data rows; docs/reference/README.md names

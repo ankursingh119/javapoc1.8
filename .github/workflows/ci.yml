@@ -1,6 +1,6 @@
 # CI for common, spark-job and workflow-app (ui/ is out of scope). Card SBJ17-2, docs/cards/SBJ17-2.md.
 # jdk8 is the job to make the required status check on main. jdk17 builds and tests common and workflow-app only
-# (spark-job stays on JDK 8 and Spark 2.4 until its own card, SBJ17-9); it stays allowed to fail until a person
+# (spark-job is built and tested on JDK 8, on Spark 3.5 and Scala 2.12 since SBJ17-11); it stays allowed to fail until a person
 # makes it required.
 # Every run step is one line: scripts/ci/acceptance/AC2 and AC4 read them line by line.
 # AC1, AC2, AC4 and AC5 check card SBJ17-2 itself (workflow shape, src/ unchanged), so they run only on that card's
