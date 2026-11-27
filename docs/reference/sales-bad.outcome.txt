@@ -1,0 +1,5 @@
+file=sales-bad.csv
+businessDate=20261116
+status=FAILED
+error=Line 3: bad number (For input string: "notanumber")
+report=no

@@ -4,6 +4,8 @@
 # AC1, AC2, AC4 and AC5 check card SBJ17-2 itself (workflow shape, src/ unchanged), so they run only on that card's
 # branch and pull request; later cards that change src/ or the jobs are not held to them. AC3 (the HBase end-to-end
 # test runs, not skips) is a lasting guard and runs on every build.
+# Card SBJ17-8 (docs/cards/SBJ17-8.md): scripts/reference/acceptance AC1 to AC4 guard the reference reports on every
+# build (AC4 runs the app on the three sample files and compares with docs/reference/); AC5 runs on that card only.
 # Two workflow-app tests are timing-sensitive: a rare red run is expected, and failed tests are never retried.
 name: CI
 
@@ -42,6 +44,15 @@ jobs:
       - if: github.ref_name == 'SBJ17-2' || github.head_ref == 'SBJ17-2'
         run: bash scripts/ci/acceptance/AC2_jdk8_job_installs_then_tests.sh
       - run: bash scripts/ci/acceptance/AC3_hbase_end_to_end_test_runs.sh
+      - run: bash scripts/reference/acceptance/AC4_compare_with_reference.sh
+      - if: success() || failure()
+        run: bash scripts/reference/acceptance/AC1_reference_reports_committed.sh
+      - if: success() || failure()
+        run: bash scripts/reference/acceptance/AC2_regenerate_document.sh
+      - if: success() || failure()
+        run: bash scripts/reference/acceptance/AC3_bad_file_outcome_recorded.sh
+      - if: (success() || failure()) && (github.ref_name == 'card/SBJ17-8-reference-reports' || github.head_ref == 'card/SBJ17-8-reference-reports')
+        run: bash scripts/reference/acceptance/AC5_tests_and_src_unchanged.sh
       - if: failure()
         run: docker logs --tail 300 sales-hbase
       - if: always()
@@ -49,6 +60,12 @@ jobs:
         with:
           name: surefire-reports-jdk8
           path: '**/target/surefire-reports/'
+          if-no-files-found: ignore
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: reference-run-jdk8
+          path: target/reference-run/
           if-no-files-found: ignore
 
   jdk17:
