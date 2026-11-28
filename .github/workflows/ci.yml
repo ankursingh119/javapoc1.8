@@ -153,8 +153,13 @@ jobs:
       - run: echo "127.0.0.1 host.docker.internal" | sudo tee -a /etc/hosts
       - run: docker compose -f docker/local/docker-compose.yml up -d hbase
       - run: bash scripts/ci/wait-for-hbase.sh 300
-      - run: mvn -B -pl common,workflow-app -am install
-      - run: mvn -B -pl common,workflow-app -am test
+      - run: mvn -B install -DskipTests
+      - id: probe_test17
+        if: success() || failure()
+        run: mvn -B test -fae
+      - id: probe_reference17
+        if: success() || failure()
+        run: java -version && bash scripts/reference/acceptance/AC4_compare_with_reference.sh
       - if: success() || failure()
         run: bash scripts/java17/acceptance/AC1_jdk17_build_and_tests_pass.sh
       - if: success() || failure()
