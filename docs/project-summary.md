@@ -7,11 +7,11 @@ audience: Engineering Team, Architects, Stakeholders
 
 # 1. Executive Summary
 
-Sales Batch is a workflow application. A user uploads a sales CSV in an Angular UI. A Java 8 service (Spring MVC 4.3 and Activiti 5.22 on embedded Jetty) loads the rows into HBase. A Scala 2.11 Spark 2.4.8 job then aggregates them by date, region and product. A manager approves or rejects the result, and on approval the service writes a report CSV.
+Sales Batch is a workflow application. A user uploads a sales CSV in an Angular UI. A Java service (Java 8 class files, run on Java 17 in production; Spring MVC 5.3 and Activiti 5.22 on embedded Jetty) loads the rows into HBase 2. A Scala 2.12 Spark 3.5 job (Java 8) then aggregates them by date, region and product. A manager approves or rejects the result, and on approval the service writes a report CSV.
 
 The runs are asynchronous. The upload returns HTTP 202 with status `QUEUED` at once. Ingest and Spark run on Activiti job executor threads, and the UI polls for status. A failed step stores its error message and ends the run as `FAILED`.
 
-The target platform is Amazon EMR 5.36 (Java 8, Spark 2.4.8, HBase 1.4.13, Hadoop 2.10.1, Scala 2.11.12). In practice the project has only been run locally: the Java app in VS Code on a Windows PC, HBase and an optional Spark standalone cluster (1 master, 2 workers) in Docker, and the workflow database in H2 or Postgres. **Behaviour on EMR and YARN has never been tested.**
+The build uses Java 17 for the server, Java 8 for the Spark job, Spring 5.3, Spark 3.5.5, Scala 2.12.18, the HBase 2.5 client and Hadoop 2.10.1. EMR 5.36 runs neither Spark 3.5 nor an HBase 2 server, so the production cluster must move off EMR 5.36 before any release. No target EMR release is chosen yet. In practice the project has only been run locally: the Java app in VS Code on a Windows PC, HBase and an optional Spark standalone cluster (1 master, 2 workers) in Docker, and the workflow database in H2 or Postgres. **Behaviour on EMR and YARN has never been tested.**
 
 This document is based on `latest-ARCHITECTURE.md` (the most current description in the repository) and was checked against the poms, the BPMN file, the controllers, the Spark job, `docker/local/docker-compose.yml` and `.vscode/launch.json`. `Large-App-ARCHITECTURE.md` is a reference design for large datasets. It is not implemented in this repository.
 
@@ -26,8 +26,8 @@ The diagram shows the local topology used for development and debugging.
 | Browser and `ng serve` | Windows host, port 4300 | Angular 20 dev server with a proxy for `/batches` and `/data` to the Java app (`ui/proxy.conf.json`). Port 4300 is used because 4200 is often taken. |
 | Java app | Windows host, port 8081 | `LocalDebugServer` (test sources) started from VS Code on JDK 8. It runs Jetty, Spring MVC and Activiti in one JVM. |
 | Spark child JVM | Windows host | Default mode `local-jvm`: the app starts a child JVM with `spark.master=local[*]`. Debug port 5006. |
-| HBase 1.4 | Docker container `sales-hbase` | Image `harisekhon/hbase:1.4`. Ports 2181, 16000, 16020, UI 16011 on the host. It advertises `host.docker.internal`, so the IDE and the Spark containers use the same HBase. |
-| Spark master and 2 workers | Docker, image `salesbatch-runtime` | Spark 2.4.8. Mode `docker-cluster`: the app runs `docker exec spark-master spark-submit` in client deploy mode, so the driver runs in the master container and the executors run on the workers (2 cores, 1 GB each). Master UI on 8090. |
+| HBase 2 | Docker container `sales-hbase` | Image `harisekhon/hbase:2.1`. Ports 2181, 16000, 16020, UI 16011 on the host. It advertises `host.docker.internal`, so the IDE and the Spark containers use the same HBase. |
+| Spark master and 2 workers | Docker, image `salesbatch-runtime` | Spark 3.5.5. Mode `docker-cluster`: the app runs `docker exec spark-master spark-submit` in client deploy mode, so the driver runs in the master container and the executors run on the workers (2 cores, 1 GB each). Master UI on 8090. |
 | Postgres 17 | Existing Docker container, port 5432 | Optional workflow database `salesbatch_activiti`. It is not part of the compose file. |
 | H2 | In the Java app | Default workflow database: memory, or the file `./data/activiti` in the debug server. |
 
@@ -74,10 +74,10 @@ The process `salesBatch` is defined in `workflow-app/src/main/resources/processe
 | Module | Language | Role |
 |---|---|---|
 | `common` | Java 8 | HBase access layer: `SalesRepository` (interface), `HBaseSalesRepository`, `HBaseTables`, `RowKeys`, `SalesSchema`, `SalesRecord`, `AggRecord`. |
-| `spark-job` | Scala 2.11.12 | `SalesAggregator` (object). Fat jar built with maven-shade. Uses `reduceByKey` to aggregate. |
+| `spark-job` | Scala 2.12.18 (Java 8) | `SalesAggregator` (object). Fat jar built with maven-shade. Uses `reduceByKey` to aggregate. |
 | `workflow-app` | Java 8 | REST API, Activiti process, delegates, Spark launchers. Shaded jar with main class `WorkflowServer`. |
 | `ui` | TypeScript | Angular 20 UI: upload, status polling, approve/reject, HBase data tables. |
-| `docker/` | | `Dockerfile` for the `salesbatch-runtime` image (Temurin 8 JRE, Spark 2.4.8 for Hadoop 2.7) and the `docker/local` compose stack. |
+| `docker/` | | `Dockerfile` for the `salesbatch-runtime` image (Temurin 8 JRE, Spark 3.5.5 for Hadoop 3) and the `docker/local` compose stack. |
 
 ## 4.2 workflow-app classes
 
@@ -131,7 +131,7 @@ Swagger UI is served at `http://localhost:8081/` (spec: `workflow-app/src/main/r
 
 ## 6.1 Local Docker stack
 
-`docker/local/docker-compose.yml` (project name `salesbatch-local`) defines four services: `hbase` (`harisekhon/hbase:1.4`, container `sales-hbase`), `spark-master`, `spark-worker-1` and `spark-worker-2` (image `salesbatch-runtime`, built once with `docker build -t salesbatch-runtime docker`). The project folder is mounted at `/work` so the Spark jar is read from `spark-job/target/`. Start with `docker compose -f docker/local/docker-compose.yml up -d`. `docker compose down` deletes the HBase data; `stop` keeps it.
+`docker/local/docker-compose.yml` (project name `salesbatch-local`) defines four services: `hbase` (`harisekhon/hbase:2.1`, container `sales-hbase`), `spark-master`, `spark-worker-1` and `spark-worker-2` (image `salesbatch-runtime`, built once with `docker build -t salesbatch-runtime docker`). The project folder is mounted at `/work` so the Spark jar is read from `spark-job/target/`. Start with `docker compose -f docker/local/docker-compose.yml up -d`. `docker compose down` deletes the HBase data; `stop` keeps it.
 
 | Port | What |
 |---|---|
@@ -164,17 +164,17 @@ JVM options (`-Dname=value`) in the launch configs. Packaged defaults are in `wo
 
 `.vscode/launch.json` defines six configurations, all Java ones on JDK 8: real HBase plus local Spark; the same paused for a Scala debugger on 5006; in-memory fakes without Docker; Postgres plus Docker Spark cluster; the same paused for the Scala debugger; and "Attach to Scala Spark job (5006)".
 
-Scala debugging uses Metals and Bloop. Bloop's project files in `.bloop/` come from a Maven import and must be patched with `node scripts/fix-bloop.js` after every re-import (it removes `common` from the `spark-job` dependencies, because Bloop's compile of `common` fails with a `-release 8` flag that JDK 8 `javac` does not have). Scala 2.11.12 is no longer supported by current Metals, so editor features are limited, although the build and the debugger work. See section 14 of `latest-ARCHITECTURE.md`.
+Scala debugging uses Metals and Bloop. Bloop's project files in `.bloop/` come from a Maven import and must be patched with `node scripts/fix-bloop.js` after every re-import (it removes `common` from the `spark-job` dependencies, because Bloop's compile of `common` fails with a `-release 8` flag that JDK 8 `javac` does not have). See section 14 of `latest-ARCHITECTURE.md`.
 
 ## 6.4 EMR versus the local simulation
 
 ![EMR target versus local simulation](diagrams/emr-vs-local.drawio.png)
 
-The local setup matches EMR 5.36 software versions and its general shape. It is not an EMR emulator and nothing here has run on EMR.
+The local setup has EMR's general shape, but not EMR 5.36's versions: the build is on Spark 3.5 and HBase 2, which EMR 5.36 does not run, so the cluster must move off EMR 5.36 before any release. It is not an EMR emulator and nothing here has run on EMR.
 
 | EMR piece | Local stand-in | Fidelity |
 |---|---|---|
-| Versions (Spark 2.4.8, HBase 1.4.13, Hadoop 2.10.1, Scala 2.11.12, Java 8) | Same versions in Maven and images | High. The Docker Spark image bundles Hadoop 2.7 libraries, EMR has 2.10. |
+| Versions (Spark 3.5.5, HBase 2, Hadoop 2.10.1, Scala 2.12.18, Java 8 for the job) | Same Spark and Scala in Maven and the image; an HBase 2 server image | Not matched by EMR 5.36 (Spark 2, HBase 1). The Docker Spark image bundles Hadoop 3 libraries. |
 | Master node runs app and `spark-submit` | App in VS Code runs `docker exec spark-submit` | Medium |
 | YARN | Spark standalone master and workers | Low to medium. Same application code, different scheduler. |
 | Core and task nodes | Two worker containers (2 cores, 1 GB) | Medium |
@@ -184,7 +184,7 @@ The local setup matches EMR 5.36 software versions and its general shape. It is 
 | Spark and Hadoop supplied by the cluster, HBase not on Spark's classpath | `provided` scope plus a fat jar bundling the HBase client | High: the same jar would go to EMR |
 | S3 / EMRFS, IAM, VPC, Kerberos, EMR Steps, autoscaling, node failures | Local disk only | Not simulated |
 
-It is good for running the same Scala job and fat jar against real HBase 1.4 and Spark 2.4.8, for exercising process boundaries (driver to executors) and for checking the launcher contract (non-zero exit code makes the run `FAILED`). It cannot tell you about YARN behaviour, sizing, HDFS or S3 behaviour, security, or failure recovery.
+It is good for running the same Scala job and fat jar against real HBase 2 and Spark 3.5, for exercising process boundaries (driver to executors) and for checking the launcher contract (non-zero exit code makes the run `FAILED`). It cannot tell you about YARN behaviour, sizing, HDFS or S3 behaviour, security, or failure recovery.
 
 To move to EMR, the README describes copying the app jar and Spark fat jar to the master node, putting `/etc/hbase/conf` on the classpath and starting `WorkflowServer`. A real deployment would also need a persistent workflow database (for example Postgres or MySQL on RDS) and S3 for input and output. These steps are untested.
 
@@ -208,7 +208,7 @@ No CI/CD configuration was found in the repository (no `.github/workflows`, `.gi
 
 Do:
 - Record failures in `batch_audit` and set `failed=true` instead of throwing from a delegate.
-- Keep Spark, Hadoop and Scala as `provided` in `spark-job`, and keep the bundled hbase-server with Guava relocated.
+- Keep Spark, Hadoop and Scala as `provided` in `spark-job`, and keep the bundled HBase client and `hbase-mapreduce` (home of `TableInputFormat` in HBase 2) with Guava relocated.
 - Rerun `node scripts/fix-bloop.js` after every Bloop import.
 - Use a new business date for each test.
 
@@ -232,29 +232,29 @@ Known limitations (from `latest-ARCHITECTURE.md` section 16):
 |---|---|---|---|
 | Angular | 20.3 (`^20.3.0`), TypeScript 5.9, rxjs 7.8 | ui | Browser UI (needs Node 20.19+) |
 | Jetty | 9.4.44.v20210927 | workflow-app | Embedded web server |
-| Spring MVC (webmvc, jdbc) | 4.3.30.RELEASE | workflow-app | REST endpoints, multipart upload |
+| Spring MVC (webmvc, jdbc) | 5.3.39 | workflow-app | REST endpoints, multipart upload |
 | Jackson | 2.9.10.8 | workflow-app | JSON |
 | Activiti (engine, spring) | 5.22.0 | workflow-app | BPMN engine, user task, job executor |
 | H2 | 1.4.197 | workflow-app | Default workflow DB |
 | PostgreSQL JDBC | 42.7.4 | workflow-app | Optional workflow DB |
 | Swagger UI webjar | 3.52.5 | workflow-app | API docs page |
 | logback, slf4j | 1.2.3, 1.7.30 | workflow-app | Logging |
-| hbase-client | 1.4.13 | common | HBase access |
-| Spark core | 2.4.8 (provided) | spark-job | Aggregation |
+| hbase-client | 2.5.10 | common | HBase access |
+| Spark core | 3.5.5 (provided) | spark-job | Aggregation |
 | Hadoop client | 2.10.1 (provided) | spark-job | Cluster supplies it |
-| Scala | 2.11.12 (provided) | spark-job | Job language |
-| hbase-server | 1.4.13 (bundled, Guava relocated to `shaded.com.google.common`) | spark-job | HBase input format; EMR does not put HBase on Spark's classpath |
+| Scala | 2.12.18 (provided) | spark-job | Job language |
+| hbase-mapreduce | 2.5.10 (bundled, Guava relocated to `shaded.com.google.common`) | spark-job | HBase input format; EMR does not put HBase on Spark's classpath |
 | JUnit | 4.13.2 | tests | Testing |
 | Maven plugins | compiler 3.8.1, surefire 2.22.2, shade 3.2.4, scala-maven-plugin 4.8.1 | build | Build |
-| HBase container | `harisekhon/hbase:1.4` | Docker | Storage |
-| Spark standalone | 2.4.8 (`salesbatch-runtime`) | Docker | Optional cluster |
+| HBase container | `harisekhon/hbase:2.1` | Docker | Storage |
+| Spark standalone | 3.5.5 (`salesbatch-runtime`) | Docker | Optional cluster |
 | PostgreSQL | 17 (existing container) | Docker | Optional workflow DB |
 
 # 10. Code Structure
 
 ```
 sales-batch-parent/
-  pom.xml                       parent POM (Java 1.8, versions pinned to EMR 5.36)
+  pom.xml                       parent POM (Java 8 class files, library versions)
   latest-ARCHITECTURE.md        most current architecture (authoritative)
   ARCHITECTURE.md               older, shorter introduction
   Large-App-ARCHITECTURE.md     reference design for large data (not implemented)
@@ -262,7 +262,7 @@ sales-batch-parent/
   common/                       HBase access layer
     src/main/java/.../common/   SalesRepository, HBaseSalesRepository, HBaseTables,
                                 RowKeys, SalesSchema, SalesRecord, AggRecord
-  spark-job/                    Scala 2.11 Spark job (fat jar)
+  spark-job/                    Scala 2.12 Spark job (fat jar)
     src/main/scala/.../spark/   SalesAggregator.scala
   workflow-app/                 Spring MVC + Activiti on embedded Jetty
     src/main/java/.../workflow/ config/, delegate/, service/, spark/, web/, WorkflowServer

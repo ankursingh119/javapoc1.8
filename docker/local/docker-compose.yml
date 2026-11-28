@@ -12,7 +12,7 @@ x-spark: &spark
 
 services:
   hbase:
-    image: harisekhon/hbase:1.4
+    image: harisekhon/hbase:2.1     # HBase 2 server for the HBase 2.5 client (card SBJ17-14)
     container_name: sales-hbase
     entrypoint: ["sh", "/tmp/start-hbase.sh"]
     volumes:

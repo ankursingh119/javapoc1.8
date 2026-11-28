@@ -2,7 +2,9 @@
 
 > **The most complete and current description is [latest-ARCHITECTURE.md](latest-ARCHITECTURE.md)** (asynchronous runs, Postgres, the Docker Spark cluster, the VS Code debug setup, and the Metals and Bloop toolchain for Scala debugging). This document stays as the shorter introduction.
 
-A small workflow application that loads a sales CSV into HBase, aggregates it with a Scala Spark job, waits for a manager's approval, and then publishes a report. It targets the EMR 5.36 stack (Java 8, Spark 2.4, Scala 2.11, HBase 1.4).
+A small workflow application that loads a sales CSV into HBase, aggregates it with a Scala Spark job, waits for a manager's approval, and then publishes a report. It builds on Java 17 for the server (Spring 5.3), Java 8 for the Spark job (Spark 3.5, Scala 2.12) and HBase 2 (the 2.5 client; HBase 2 in Docker locally).
+
+**Production cluster:** EMR 5.36 runs neither Spark 3.5 nor an HBase 2 server, so the production cluster must move off EMR 5.36 before any release. No target EMR release is chosen yet.
 
 The diagrams below are written in [Mermaid](https://mermaid.js.org/). They render on GitHub, GitLab, and in VS Code (Markdown Preview Mermaid Support extension).
 
@@ -18,9 +20,9 @@ flowchart LR
         UI["<b>Angular UI</b> (ui/)<br/>Angular 20<br/>upload, status, approve,<br/>HBase data tables"]
     end
 
-    subgraph APP["workflow-app (Java 8, one JVM)"]
+    subgraph APP["workflow-app (runs on Java 17, one JVM)"]
         JET["<b>Embedded Jetty</b> 9.4.44<br/>web server on port 8081"]
-        MVC["<b>Spring MVC</b> 4.3.30<br/>BatchController, DataController<br/>Jackson 2.9 for JSON"]
+        MVC["<b>Spring MVC</b> 5.3<br/>BatchController, DataController<br/>Jackson 2.9 for JSON"]
         ACT["<b>Activiti</b> 5.22<br/>BPMN process engine<br/>delegates: Ingest, Spark,<br/>Publish, Reject<br/>Ingest and Spark run async<br/>on the job executor"]
         H2[("<b>H2</b> 1.4.197<br/>in memory by default<br/>(file in the IDE debug server)<br/>Activiti state and jobs")]
         SW["<b>Swagger UI</b> 3.52.5<br/>API docs at /"]
@@ -28,14 +30,14 @@ flowchart LR
     end
 
     subgraph COMMON["common module (shared library)"]
-        REPO["<b>HBaseSalesRepository</b><br/>hbase-client 1.4.13<br/>table names, row keys, schema"]
+        REPO["<b>HBaseSalesRepository</b><br/>hbase-client 2.5.10<br/>table names, row keys, schema"]
     end
 
-    subgraph SPARKMOD["spark-job module (Scala 2.11.12)"]
-        AGG["<b>SalesAggregator</b><br/>Spark 2.4.8, Hadoop 2.10.1<br/>hbase-server 1.4.13 for TableInputFormat<br/>(Spark and Hadoop provided by EMR)"]
+    subgraph SPARKMOD["spark-job module (Scala 2.12.18, Java 8)"]
+        AGG["<b>SalesAggregator</b><br/>Spark 3.5.5, Hadoop 2.10.1<br/>hbase-mapreduce 2.5.10 for TableInputFormat<br/>(Spark and Hadoop provided by the cluster)"]
     end
 
-    subgraph HBASE["HBase 1.4 (separate service)"]
+    subgraph HBASE["HBase 2 (separate service)"]
         RAW[("sales_raw<br/>uploaded rows")]
         AGGT[("sales_agg<br/>aggregates")]
         AUD[("batch_audit<br/>run status")]
@@ -151,21 +153,21 @@ stateDiagram-v2
 
 | Dependency | Module | Purpose |
 |---|---|---|
-| Spring MVC 4.3.30 | workflow-app | REST endpoints (upload, status, approve, data) |
+| Spring MVC 5.3.39 | workflow-app | REST endpoints (upload, status, approve, data) |
 | Activiti 5.22.0 | workflow-app | Runs the process: ingest, Spark, approval, publish or reject |
 | H2 1.4.197 | workflow-app | Stores Activiti's own state and the pending background jobs. In memory by default (lost on restart); a file database in the IDE debug server |
 | Jetty 9.4.44 | workflow-app | Embedded web server, so no Tomcat or WAR is needed |
 | Jackson 2.9.10.8 | workflow-app | JSON for REST requests and responses |
 | Swagger UI 3.52.5 (webjar) | workflow-app | API documentation page |
 | logback 1.2.3, slf4j 1.7.30 | workflow-app | Logging |
-| hbase-client 1.4.13 | common | Java client that reads and writes the HBase tables |
+| hbase-client 2.5.10 | common | Java client that reads and writes the HBase tables |
 | `common` module | workflow-app, spark-job | Shared table names, row keys and schema |
-| Spark 2.4.8 (spark-core) | spark-job | Distributed aggregation. `provided`: EMR supplies it |
-| Hadoop 2.10.1 (hadoop-client) | spark-job | Spark's Hadoop APIs. `provided`: EMR supplies it |
-| Scala 2.11.12 | spark-job | Language of the Spark job. `provided` |
-| hbase-server 1.4.13 | spark-job | Gives Spark the HBase input format. Bundled into the Spark jar because EMR does not put HBase on Spark's classpath (Guava is relocated to avoid clashes) |
+| Spark 3.5.5 (spark-core) | spark-job | Distributed aggregation. `provided`: the cluster supplies it |
+| Hadoop 2.10.1 (hadoop-client) | spark-job | Spark's Hadoop APIs. `provided`: the cluster supplies it |
+| Scala 2.12.18 | spark-job | Language of the Spark job (Java 8 class files). `provided` |
+| hbase-mapreduce 2.5.10 | spark-job | Gives Spark the HBase input format. Bundled into the Spark jar because EMR does not put HBase on Spark's classpath (Guava is relocated to avoid clashes) |
 | Angular 20 | ui | Test UI that calls the REST API |
-| HBase 1.4 | external service | Storage for raw rows, aggregates and run status |
+| HBase 2 | external service | Storage for raw rows, aggregates and run status |
 
 ## 5. Questions people ask
 
