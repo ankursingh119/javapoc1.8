@@ -1,0 +1,26 @@
+# static (AC4, AC5)
+BASELINE scripts/java17s1/acceptance/AC4_jdk8_job_unchanged_class_files_java8.sh rc=0 PASS: AC4 the jdk8 job is unchanged since 33e45df and all 31 class files are Java 8 (52)
+BASELINE scripts/java17s1/acceptance/AC5_no_main_or_test_change.sh rc=0 PASS: AC5 no main or test source changed since 33e45df
+FAIL: common/target/classes/com/example/salesbatch/common/RowKeys.class has class-file version 61, not 52 (Java 8)
+MUTANT M5-classfiles-java17 AC4 -> KILLED
+FAIL: the jdk8 job changed since 33e45df
+MUTANT M6-jdk8-job-edited AC4 -> KILLED
+FAIL: main or test sources changed since 33e45df
+MUTANT M7-main-source-edited(common/src/main/java/com/example/salesbatch/common/AggRecord.java) AC5 -> KILLED
+# hbase (AC1, AC2)
+BASELINE scripts/java17s1/acceptance/AC1_jdk17_whole_build_and_tests_pass.sh rc=0 PASS: AC1 the whole build (common, spark-job, workflow-app) passes every existing test on JDK 17, tests unchanged
+BASELINE scripts/java17s1/acceptance/AC2_server_and_job_on_jdk17_match_reference.sh rc=0 PASS: AC2 server and Spark job both on JDK 17 match the reference: two reports and the sales-bad.csv rejection
+FAIL: spark-job: 0 failed and 7 errors of 10
+MUTANT M1-no-module-options-in-test-fork AC1 -> KILLED
+FAIL: spark-job ran 6 tests, fewer than the 8 it had before the change
+MUTANT M2-slf4j-log4j12-kept-in-tests AC1 -> KILLED
+FAIL: sales-20261113.csv did not reach WAITING_APPROVAL
+MUTANT M3a-job-without-module-options AC2 -> KILLED
+FAIL: sales-20261113.csv did not reach WAITING_APPROVAL
+MUTANT M3b-slf4j-log4j12-kept-in-job AC2 -> KILLED
+FAIL: a Spark job ran on a java other than 17: 1.8.0_442 
+MUTANT M3c-job-on-java8 AC2 -> KILLED
+# AC3
+5:FROM eclipse-temurin:8-jre-jammy
+FAIL: the image salesbatch-runtime runs openjdk version "1.8.0_512", not java 17
+MUTANT M4-dockerfile-base-java8 AC3 -> KILLED
