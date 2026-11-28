@@ -7,11 +7,11 @@ audience: Engineering Team, Architects, Stakeholders
 
 # 1. Executive Summary
 
-Sales Batch is a workflow application. A user uploads a sales CSV in an Angular UI. A Java service (Java 8 class files, run on Java 17 in production; Spring MVC 5.3 and Activiti 5.22 on embedded Jetty) loads the rows into HBase 2. A Scala 2.12 Spark 3.5 job (Java 8) then aggregates them by date, region and product. A manager approves or rejects the result, and on approval the service writes a report CSV.
+Sales Batch is a workflow application. A user uploads a sales CSV in an Angular UI. A Java service (Java 17; Spring MVC 5.3 and Activiti 5.22 on embedded Jetty) loads the rows into HBase 2. A Scala 2.12 Spark 3.5 job (run on Java 17) then aggregates them by date, region and product. A manager approves or rejects the result, and on approval the service writes a report CSV.
 
 The runs are asynchronous. The upload returns HTTP 202 with status `QUEUED` at once. Ingest and Spark run on Activiti job executor threads, and the UI polls for status. A failed step stores its error message and ends the run as `FAILED`.
 
-The build uses Java 17 for the server, Java 8 for the Spark job, Spring 5.3, Spark 3.5.5, Scala 2.12.18, the HBase 2.5 client and Hadoop 2.10.1. EMR 5.36 runs neither Spark 3.5 nor an HBase 2 server, so the production cluster must move off EMR 5.36 before any release. No target EMR release is chosen yet. In practice the project has only been run locally: the Java app in VS Code on a Windows PC, HBase and an optional Spark standalone cluster (1 master, 2 workers) in Docker, and the workflow database in H2 or Postgres. **Behaviour on EMR and YARN has never been tested.**
+The build uses Java 17 for the server and the Spark job, Spring 5.3, Spark 3.5.5, Scala 2.12.18, the HBase 2.5 client and Hadoop 2.10.1. EMR 5.36 runs neither Spark 3.5 nor an HBase 2 server, so the production cluster must move off EMR 5.36 before any release. No target EMR release is chosen yet. In practice the project has only been run locally: the Java app in VS Code on a Windows PC, HBase and an optional Spark standalone cluster (1 master, 2 workers) in Docker, and the workflow database in H2 or Postgres. **Behaviour on EMR and YARN has never been tested.**
 
 This document is based on `latest-ARCHITECTURE.md` (the most current description in the repository) and was checked against the poms, the BPMN file, the controllers, the Spark job, `docker/local/docker-compose.yml` and `.vscode/launch.json`. `Large-App-ARCHITECTURE.md` is a reference design for large datasets. It is not implemented in this repository.
 
@@ -24,7 +24,7 @@ The diagram shows the local topology used for development and debugging.
 | Piece | Where | Detail |
 |---|---|---|
 | Browser and `ng serve` | Windows host, port 4300 | Angular 20 dev server with a proxy for `/batches` and `/data` to the Java app (`ui/proxy.conf.json`). Port 4300 is used because 4200 is often taken. |
-| Java app | Windows host, port 8081 | `LocalDebugServer` (test sources) started from VS Code on JDK 8. It runs Jetty, Spring MVC and Activiti in one JVM. |
+| Java app | Windows host, port 8081 | `LocalDebugServer` (test sources) started from VS Code on JDK 17. It runs Jetty, Spring MVC and Activiti in one JVM. |
 | Spark child JVM | Windows host | Default mode `local-jvm`: the app starts a child JVM with `spark.master=local[*]`. Debug port 5006. |
 | HBase 2 | Docker container `sales-hbase` | Image `harisekhon/hbase:2.1`. Ports 2181, 16000, 16020, UI 16011 on the host. It advertises `host.docker.internal`, so the IDE and the Spark containers use the same HBase. |
 | Spark master and 2 workers | Docker, image `salesbatch-runtime` | Spark 3.5.5. Mode `docker-cluster`: the app runs `docker exec spark-master spark-submit` in client deploy mode, so the driver runs in the master container and the executors run on the workers (2 cores, 1 GB each). Master UI on 8090. |
@@ -73,11 +73,11 @@ The process `salesBatch` is defined in `workflow-app/src/main/resources/processe
 
 | Module | Language | Role |
 |---|---|---|
-| `common` | Java 8 | HBase access layer: `SalesRepository` (interface), `HBaseSalesRepository`, `HBaseTables`, `RowKeys`, `SalesSchema`, `SalesRecord`, `AggRecord`. |
-| `spark-job` | Scala 2.12.18 (Java 8) | `SalesAggregator` (object). Fat jar built with maven-shade. Uses `reduceByKey` to aggregate. |
-| `workflow-app` | Java 8 | REST API, Activiti process, delegates, Spark launchers. Shaded jar with main class `WorkflowServer`. |
+| `common` | Java 17 | HBase access layer: `SalesRepository` (interface), `HBaseSalesRepository`, `HBaseTables`, `RowKeys`, `SalesSchema`, `SalesRecord`, `AggRecord`. |
+| `spark-job` | Scala 2.12.18 (Java 17) | `SalesAggregator` (object). Fat jar built with maven-shade. Uses `reduceByKey` to aggregate. |
+| `workflow-app` | Java 17 | REST API, Activiti process, delegates, Spark launchers. Shaded jar with main class `WorkflowServer`. |
 | `ui` | TypeScript | Angular 20 UI: upload, status polling, approve/reject, HBase data tables. |
-| `docker/` | | `Dockerfile` for the `salesbatch-runtime` image (Temurin 8 JRE, Spark 3.5.5 for Hadoop 3) and the `docker/local` compose stack. |
+| `docker/` | | `Dockerfile` for the `salesbatch-runtime` image (Temurin 17 JRE, Spark 3.5.5 for Hadoop 3) and the `docker/local` compose stack. |
 
 ## 4.2 workflow-app classes
 
@@ -158,13 +158,13 @@ JVM options (`-Dname=value`) in the launch configs. Packaged defaults are in `wo
 | `spark.docker.jar` | `/work/spark-job/target/spark-job-1.0.0-SNAPSHOT.jar` | Fat jar path in the container |
 | `activiti.jdbc.url` / `.driver` | H2 memory / `org.h2.Driver` | Workflow DB. Debug server defaults to the H2 file `./data/activiti`. Use `org.postgresql.Driver` for Postgres. |
 | `debug.inmemory` | false | In-memory fakes for HBase and Spark (no Docker) |
-| `user.timezone` | JVM default | Set `UTC` with Postgres (Java 8 reports `Asia/Calcutta`, which Postgres 17 rejects) |
+| `user.timezone` | JVM default | Set `UTC` with Postgres (Java on Windows can report `Asia/Calcutta`, which Postgres 17 rejects) |
 
 ## 6.3 VS Code debugging
 
-`.vscode/launch.json` defines six configurations, all Java ones on JDK 8: real HBase plus local Spark; the same paused for a Scala debugger on 5006; in-memory fakes without Docker; Postgres plus Docker Spark cluster; the same paused for the Scala debugger; and "Attach to Scala Spark job (5006)".
+`.vscode/launch.json` defines six configurations, all Java ones on JDK 17: real HBase plus local Spark; the same paused for a Scala debugger on 5006; in-memory fakes without Docker; Postgres plus Docker Spark cluster; the same paused for the Scala debugger; and "Attach to Scala Spark job (5006)".
 
-Scala debugging uses Metals and Bloop. Bloop's project files in `.bloop/` come from a Maven import and must be patched with `node scripts/fix-bloop.js` after every re-import (it removes `common` from the `spark-job` dependencies, because Bloop's compile of `common` fails with a `-release 8` flag that JDK 8 `javac` does not have). See section 14 of `latest-ARCHITECTURE.md`.
+Scala debugging uses Metals and Bloop. Bloop's project files in `.bloop/` come from a Maven import and must be patched with `node scripts/fix-bloop.js` after every re-import (it removes `common` from the `spark-job` dependencies, because Bloop's compile of `common` failed with a `-release` flag that JDK 8 `javac` did not have; harmless on JDK 17). See section 14 of `latest-ARCHITECTURE.md`.
 
 ## 6.4 EMR versus the local simulation
 
@@ -174,7 +174,7 @@ The local setup has EMR's general shape, but not EMR 5.36's versions: the build 
 
 | EMR piece | Local stand-in | Fidelity |
 |---|---|---|
-| Versions (Spark 3.5.5, HBase 2, Hadoop 2.10.1, Scala 2.12.18, Java 8 for the job) | Same Spark and Scala in Maven and the image; an HBase 2 server image | Not matched by EMR 5.36 (Spark 2, HBase 1). The Docker Spark image bundles Hadoop 3 libraries. |
+| Versions (Spark 3.5.5, HBase 2, Hadoop 2.10.1, Scala 2.12.18, Java 17 for the job) | Same Spark and Scala in Maven and the image; an HBase 2 server image | Not matched by EMR 5.36 (Spark 2, HBase 1). The Docker Spark image bundles Hadoop 3 libraries. |
 | Master node runs app and `spark-submit` | App in VS Code runs `docker exec spark-submit` | Medium |
 | YARN | Spark standalone master and workers | Low to medium. Same application code, different scheduler. |
 | Core and task nodes | Two worker containers (2 cores, 1 GB) | Medium |
@@ -254,7 +254,7 @@ Known limitations (from `latest-ARCHITECTURE.md` section 16):
 
 ```
 sales-batch-parent/
-  pom.xml                       parent POM (Java 8 class files, library versions)
+  pom.xml                       parent POM (Java 17, library versions)
   latest-ARCHITECTURE.md        most current architecture (authoritative)
   ARCHITECTURE.md               older, shorter introduction
   Large-App-ARCHITECTURE.md     reference design for large data (not implemented)

@@ -2,7 +2,7 @@
 
 > **The most complete and current description is [latest-ARCHITECTURE.md](latest-ARCHITECTURE.md)** (asynchronous runs, Postgres, the Docker Spark cluster, the VS Code debug setup, and the Metals and Bloop toolchain for Scala debugging). This document stays as the shorter introduction.
 
-A small workflow application that loads a sales CSV into HBase, aggregates it with a Scala Spark job, waits for a manager's approval, and then publishes a report. It builds on Java 17 for the server (Spring 5.3), Java 8 for the Spark job (Spark 3.5, Scala 2.12) and HBase 2 (the 2.5 client; HBase 2 in Docker locally).
+A small workflow application that loads a sales CSV into HBase, aggregates it with a Scala Spark job, waits for a manager's approval, and then publishes a report. It builds and runs on Java 17: the server (Spring 5.3), the Spark job (Spark 3.5, Scala 2.12) and HBase 2 (the 2.5 client; HBase 2 in Docker locally).
 
 **Production cluster:** EMR 5.36 runs neither Spark 3.5 nor an HBase 2 server, so the production cluster must move off EMR 5.36 before any release. No target EMR release is chosen yet.
 
@@ -33,7 +33,7 @@ flowchart LR
         REPO["<b>HBaseSalesRepository</b><br/>hbase-client 2.5.10<br/>table names, row keys, schema"]
     end
 
-    subgraph SPARKMOD["spark-job module (Scala 2.12.18, Java 8)"]
+    subgraph SPARKMOD["spark-job module (Scala 2.12.18, Java 17)"]
         AGG["<b>SalesAggregator</b><br/>Spark 3.5.5, Hadoop 2.10.1<br/>hbase-mapreduce 2.5.10 for TableInputFormat<br/>(Spark and Hadoop provided by the cluster)"]
     end
 
@@ -164,7 +164,7 @@ stateDiagram-v2
 | `common` module | workflow-app, spark-job | Shared table names, row keys and schema |
 | Spark 3.5.5 (spark-core) | spark-job | Distributed aggregation. `provided`: the cluster supplies it |
 | Hadoop 2.10.1 (hadoop-client) | spark-job | Spark's Hadoop APIs. `provided`: the cluster supplies it |
-| Scala 2.12.18 | spark-job | Language of the Spark job (Java 8 class files). `provided` |
+| Scala 2.12.18 | spark-job | Language of the Spark job (built and run on Java 17). `provided` |
 | hbase-mapreduce 2.5.10 | spark-job | Gives Spark the HBase input format. Bundled into the Spark jar because EMR does not put HBase on Spark's classpath (Guava is relocated to avoid clashes) |
 | Angular 20 | ui | Test UI that calls the REST API |
 | HBase 2 | external service | Storage for raw rows, aggregates and run status |
