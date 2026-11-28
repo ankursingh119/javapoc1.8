@@ -132,4 +132,28 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <!-- Card SBJ17-16: on Java 9 and later, slf4j-log4j12 (from hadoop-client, provided) calls MDCFriend.fixForJava9,
+         which fails against Spark 3.5's log4j-1.2-api (NoSuchFieldError: mdc). ZooKeeper's client thread dies on it,
+         and every HBase call ends in ConnectionLoss. The test fork leaves that binding out on Java 9+ only; the
+         JDK 8 build and the shaded jar (where the jar is provided, so absent) are unchanged. -->
+    <profile>
+      <id>java9plus-tests</id>
+      <activation><jdk>[9,)</jdk></activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <classpathDependencyExcludes>
+                <classpathDependencyExclude>org.slf4j:slf4j-log4j12</classpathDependencyExclude>
+              </classpathDependencyExcludes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

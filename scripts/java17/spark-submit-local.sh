@@ -28,7 +28,11 @@ if [ -n "${SPARK_STANDIN_LOG:-}" ]; then
   { echo "args: $*"; "$java" -version 2>&1; } >> "$SPARK_STANDIN_LOG"
 fi
 
+# slf4j-log4j12 (from hadoop-client) breaks ZooKeeper's client thread on Java 9+ against Spark 3.5's log4j-1.2-api
+# (MDCFriend.fixForJava9: NoSuchFieldError mdc), as in spark-job/pom.xml's java9plus-tests profile: leave it out.
+cp=$(tr ':' '\n' < "$cpfile" | grep -v '/slf4j-log4j12-' | paste -sd: -)
+
 # shellcheck disable=SC2086
 exec "$java" $SPARK_JAVA17_OPTIONS -Dspark.master='local[*]' -Dspark.ui.enabled=false \
   -Dspark.driver.host=127.0.0.1 -Dspark.driver.bindAddress=127.0.0.1 \
-  -cp "$conf:$classes:$(cat "$cpfile")" "$main" "$date"
+  -cp "$conf:$classes:$cp" "$main" "$date"
