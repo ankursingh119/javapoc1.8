@@ -69,7 +69,7 @@ You need about **6 GB of free RAM**, **10 GB of disk** and internet access for t
 
 | # | Tool | Version | Download | Notes |
 |---|---|---|---|---|
-| 1 | **JDK 8** | Temurin 8 (8u4xx) | https://adoptium.net/temurin/releases/?version=8 | **Must be 8** for the full build and the local debug flow: the Spark job (Spark 3.5.5) is built and tested on Java 8, and the debug server starts it with its own Java. `common` and `workflow-app` alone also build and run on JDK 17 (`mvn -pl common,workflow-app -am install`), as the pipeline's JDK 17 job does. Choose the `.msi` installer and tick **Set JAVA_HOME variable** and **Add to PATH** |
+| 1 | **JDK 8** | Temurin 8 (8u4xx) | https://adoptium.net/temurin/releases/?version=8 | **Must be 8** for the full build and the local debug flow: the Spark job (Spark 3.5.5) is built and tested on Java 8, and the debug server starts it with its own Java. The whole build, the Spark job included, also builds, tests and runs on JDK 17 (`mvn install`; the Spark job's tests get Spark's Java 17 module options from `spark-job/pom.xml`), as the pipeline's JDK 17 job does; the local setup below still uses JDK 8 until Java 8 is retired. Choose the `.msi` installer and tick **Set JAVA_HOME variable** and **Add to PATH** |
 | 2 | **Apache Maven** | 3.6 or newer (3.9.9 tested) | https://maven.apache.org/download.cgi | Unzip, then add its `bin` folder to `PATH` |
 | 3 | **Node.js** | **20.19 or newer** (24.14 tested) | https://nodejs.org (LTS) | Angular 20 does not work on Node 12 to 18. Check with `node -v` |
 | 4 | **Docker** | Docker Desktop or Rancher Desktop | https://www.docker.com/products/docker-desktop/ | Must be **running**. Allow about 4 GB of memory for it |
