@@ -1,7 +1,7 @@
 # Reference reports (card SBJ17-8)
 
 What today's application writes for the three sample files, recorded before the Java 17 upgrade so every later
-change can be compared with it. The pipeline's JDK 17 job reruns the three files on every push and fails when the
+change can be compared with it. The pipeline's JDK 8 job reruns the three files on every push and fails when the
 result differs (`scripts/reference/acceptance/AC4_compare_with_reference.sh`).
 
 ## What is here
@@ -33,7 +33,7 @@ the compare then fails on purpose and a person decides whether the new text is a
 
 ### In the pipeline
 
-Every push runs the capture and the compare in job "JDK 17" (card SBJ17-17; job "JDK 8" before it); the run's artifact `reference-run` holds the
+Every push runs the capture and the compare in job "JDK 8"; the run's artifact `reference-run-jdk8` holds the
 reports, the outcome files, the server log, the Java version and a scan of HBase's `sales_agg` table. To take a new
 reference (only when a person has agreed the change in the reports), copy from that artifact:
 `reports/report-20261113.csv`, `reports/report-20261115.csv` and `outcome-sales-bad.csv.txt` (as
@@ -41,7 +41,7 @@ reference (only when a person has agreed the change in the reports), copy from t
 
 ### On a Linux machine, or Windows with Git Bash and Docker in WSL (README sections 3 and 4)
 
-From the repository root, with JDK 17 and Maven on `PATH` and Docker running:
+From the repository root, with JDK 8 and Maven on `PATH` and Docker running:
 
 ```
 export SPARK_LOCAL_IP=127.0.0.1
