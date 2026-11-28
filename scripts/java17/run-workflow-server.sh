@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 # Card SBJ17-9. Run the production WorkflowServer (the shaded workflow-app.jar) on the java on PATH, against HBase in
-# Docker, with the Spark job run on JDK 8 through scripts/java17/spark-submit-jdk8.sh, and drive the three sample
+# Docker, with the Spark job run through scripts/java17/spark-submit-local.sh on the same Java (card SBJ17-17 retired
+# SBJ17-9's JDK 8 stand-in with the JDK 8 job), and drive the three sample
 # files through the REST flow the way scripts/reference/capture.sh does. Writes into OUT (default
 # target/java17-run), in capture.sh's format so scripts/reference/acceptance/AC4_compare_with_reference.sh applies:
 #   reports/report-<date>.csv, outcome-<file>.txt, server.log, java-version.txt (the server's java),
 #   spark-standin.log (each Spark job's arguments and java version)
 # Needs: HBase up (docker compose -f docker/local/docker-compose.yml up -d hbase; scripts/ci/wait-for-hbase.sh 300),
-# workflow-app/target/workflow-app.jar, spark-job's classes and target/local-classpath.txt built with JDK 8, and
-# JAVA8_HOME. Linux or macOS (the stand-in is a shell script the server starts directly).
+# workflow-app/target/workflow-app.jar, spark-job's classes and spark-job/target/local-classpath.txt. Linux or macOS
+# (the stand-in is a shell script the server starts directly).
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 ROOT=$(pwd)
@@ -20,16 +21,13 @@ JAR=workflow-app/target/workflow-app.jar
 rm -rf "$OUT"; mkdir -p "$OUT/reports"
 OUT_ABS=$(cd "$OUT" && pwd)
 [ -f "$JAR" ] || { echo "run: missing $JAR (build workflow-app)" >&2; exit 1; }
-# Card SBJ17-16: SPARK_SUBMIT_STANDIN picks the stand-in (default SBJ17-9's JDK 8 one, which needs JAVA8_HOME);
-# scripts/java17/spark-submit-local.sh runs the job on Java 17 instead.
-STANDIN=${SPARK_SUBMIT_STANDIN:-scripts/java17/spark-submit-jdk8.sh}
-if [ "$STANDIN" = scripts/java17/spark-submit-jdk8.sh ]; then
-  : "${JAVA8_HOME:?run: set JAVA8_HOME to a JDK 8 for the Spark job}"
-fi
+# Card SBJ17-16: SPARK_SUBMIT_STANDIN picks the stand-in; card SBJ17-17 made scripts/java17/spark-submit-local.sh
+# (the job on the java on PATH, or JOB_JAVA_HOME's) the default.
+STANDIN=${SPARK_SUBMIT_STANDIN:-scripts/java17/spark-submit-local.sh}
 chmod +x "$STANDIN"
 
 java -version > "$OUT/java-version.txt" 2>&1
-SPARK_STANDIN_LOG="$OUT_ABS/spark-standin.log" JAVA8_HOME="${JAVA8_HOME:-}" \
+SPARK_STANDIN_LOG="$OUT_ABS/spark-standin.log" \
 java -Dserver.port="$PORT" -Dreport.dir="$OUT_ABS/reports" \
   "-Dactiviti.jdbc.url=jdbc:h2:mem:java17run;DB_CLOSE_DELAY=-1" \
   -Dspark.submit.command="$ROOT/$STANDIN" \

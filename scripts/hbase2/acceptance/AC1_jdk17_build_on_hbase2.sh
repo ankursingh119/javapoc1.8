@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Card SBJ17-17 (docs/cards/SBJ17-17.md) replaced the JDK 8 job with one JDK 17 job; this check moved with it and
+# asserts java 17 where it asserted java 8 (it was AC1_jdk8_build_on_hbase2.sh). Below, read "the JDK 17 job".
 # AC1 In the pipeline's JDK 8 job, `mvn -B install` and `mvn -B test` pass with common and spark-job on an HBase 2
 # client and the pipeline's HBase container on HBase 2; the existing tests are unchanged and pass, and the new tests
 # pass.
@@ -12,7 +14,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 . scripts/hbase2/acceptance/lib.sh
 
-[ "$(java_major)" = 8 ] || fail "this job runs java $(java_major), not 8"
+[ "$(java_major)" = 17 ] || fail "this job runs java $(java_major), not 17"
 
 for m in common spark-job; do
   v=$(module_prop "$m" hbase.version)
@@ -35,4 +37,4 @@ require_module_green common 30
 require_module_green spark-job 8
 require_module_green workflow-app 30
 require_clean_report "$HBASE_E2E_REPORT"
-pass "AC1 JDK 8 build on the HBase $v client against HBase server $server: existing tests unchanged and passing"
+pass "AC1 JDK 17 build on the HBase $v client against HBase server $server: existing tests unchanged and passing"

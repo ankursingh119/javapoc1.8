@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 # AC4 The architecture documents (ARCHITECTURE.md, latest-ARCHITECTURE.md, docs/project-summary.md), the README and
 # the diagrams in docs/diagrams/ name the versions the build uses (HBase 2, Spark 3.5, Scala 2.12, Spring 5.3,
-# Java 17 for the server and Java 8 for the Spark job) and not the old HBase, Spark and Scala versions they replaced,
+# Java 17) and not the old HBase, Spark and Scala versions they replaced,
 # and say the production cluster must move off EMR 5.36 before any release.
 # (The card's own words are in docs/cards/SBJ17-14.md; they are paraphrased here so this file does not itself name
 # the old versions that other checks look for under scripts/.)
 # Checks, without Docker or Maven:
 # - none of the four Markdown documents nor any docs/diagrams/*.drawio names an old version;
-# - each of the four Markdown documents names HBase 2, Spark 3.5, Scala 2.12, Spring 5.3, Java 17 and Java 8;
+# - each of the four Markdown documents names HBase 2, Spark 3.5, Scala 2.12, Spring 5.3 and Java 17, and none says
+#   the build makes Java 8 class files (card SBJ17-17, docs/cards/SBJ17-17.md, moved the Spark job and the whole
+#   build to Java 17; this check required "Java 8" before);
 # - each of the four Markdown documents has a line that names EMR 5.36 (or emr-5.36) and says "before" a release.
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
@@ -27,10 +29,13 @@ fi
 
 missing=""
 for f in "${docs[@]}"; do
-  for want in 'HBase 2' 'Spark 3\.5' 'Scala 2\.12' 'Spring 5\.3' 'Java 17' 'Java 8'; do
+  for want in 'HBase 2' 'Spark 3\.5' 'Scala 2\.12' 'Spring 5\.3' 'Java 17'; do
     grep -qE "$want" "$f" || missing="$missing
 $f does not name '${want//\\/}'"
   done
+  if grep -qiE 'Java 8 class files' "$f"; then missing="$missing
+$f still says the build makes Java 8 class files"
+  fi
   grep -iE 'EMR[ -]5\.36' "$f" | grep -qiE 'before' || missing="$missing
 $f has no line saying the production cluster must move off EMR 5.36 before release"
 done

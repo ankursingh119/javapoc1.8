@@ -79,7 +79,7 @@
         <configuration>
           <scalaVersion>${scala.version}</scalaVersion>
           <args>
-            <arg>-target:jvm-1.8</arg>
+            <arg>-release:17</arg>
             <arg>-deprecation</arg>
           </args>
         </configuration>
