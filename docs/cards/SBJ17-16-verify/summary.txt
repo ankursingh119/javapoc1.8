@@ -1,0 +1,75 @@
+== environment default
+same outcome-s01-empty.csv.txt COMPLETED
+same outcome-s02-header-only.csv.txt COMPLETED
+same outcome-s03-one-row.csv.txt COMPLETED
+same outcome-s04-neg-qty.csv.txt COMPLETED
+same outcome-s05-neg-amount.csv.txt COMPLETED
+same outcome-s06-zero.csv.txt COMPLETED
+same outcome-s07-qty-int-overflow.csv.txt COMPLETED
+same outcome-s08-large-amount.csv.txt COMPLETED
+same outcome-s09-ties.csv.txt COMPLETED
+same outcome-s10-extra-decimals.csv.txt COMPLETED
+same outcome-s11-no-decimals.csv.txt COMPLETED
+same outcome-s12-scientific.csv.txt 
+same outcome-s13-reordered.csv.txt COMPLETED
+same outcome-s14-crlf.csv.txt COMPLETED
+same outcome-s15-spaces.csv.txt COMPLETED
+same outcome-s16-unicode-region.csv.txt COMPLETED
+same outcome-s17-lowercase-region.csv.txt COMPLETED
+same outcome-s18-empty-qty.csv.txt FAILED
+same outcome-s19-empty-amount.csv.txt FAILED
+same outcome-s20-empty-region.csv.txt COMPLETED
+same outcome-s21-extra-column.csv.txt FAILED
+same outcome-s22-missing-column.csv.txt FAILED
+same outcome-s23-quoted.csv.txt COMPLETED
+same outcome-s24-decimal-qty.csv.txt FAILED
+same outcome-s25-comma-decimal.csv.txt FAILED
+same outcome-s26-dup-order.csv.txt COMPLETED
+same outcome-s27-bom.csv.txt FAILED
+same outcome-s28-header-reordered.csv.txt FAILED
+same outcome-s29-arabic-digits.csv.txt COMPLETED
+same outcome-s30-no-trailing-nl.csv.txt COMPLETED
+same outcome-s31-many-rows.csv.txt COMPLETED
+same outcome-sales-20261113.csv.txt COMPLETED
+same outcome-sales-20261115.csv.txt COMPLETED
+same outcome-sales-bad.csv.txt FAILED
+sales_agg: same (237 cells)
+java: old openjdk version "1.8.0_442" / new openjdk version "17.0.15" 2025-04-15
+job java (stand-in log): old version "1.8.0_442"  / new version "17.0.15" 
+inputs 34, differing 0
+== environment latin1
+same outcome-s05-neg-amount.csv.txt COMPLETED
+same outcome-s07-qty-int-overflow.csv.txt COMPLETED
+same outcome-s08-large-amount.csv.txt COMPLETED
+same outcome-s09-ties.csv.txt COMPLETED
+same outcome-s10-extra-decimals.csv.txt COMPLETED
+same outcome-s14-crlf.csv.txt COMPLETED
+same outcome-s16-unicode-region.csv.txt COMPLETED
+same outcome-s27-bom.csv.txt FAILED
+same outcome-s29-arabic-digits.csv.txt COMPLETED
+same outcome-s31-many-rows.csv.txt COMPLETED
+same outcome-sales-20261113.csv.txt COMPLETED
+same outcome-sales-20261115.csv.txt COMPLETED
+same outcome-sales-bad.csv.txt FAILED
+sales_agg: same (189 cells)
+java: old openjdk version "1.8.0_442" / new openjdk version "17.0.15" 2025-04-15
+job java (stand-in log): old version "1.8.0_442"  / new version "17.0.15" 
+inputs 13, differing 0
+== environment ar
+same outcome-s05-neg-amount.csv.txt COMPLETED
+same outcome-s07-qty-int-overflow.csv.txt COMPLETED
+same outcome-s08-large-amount.csv.txt COMPLETED
+same outcome-s09-ties.csv.txt COMPLETED
+same outcome-s10-extra-decimals.csv.txt COMPLETED
+same outcome-s14-crlf.csv.txt COMPLETED
+same outcome-s16-unicode-region.csv.txt COMPLETED
+same outcome-s27-bom.csv.txt FAILED
+same outcome-s29-arabic-digits.csv.txt COMPLETED
+same outcome-s31-many-rows.csv.txt COMPLETED
+same outcome-sales-20261113.csv.txt COMPLETED
+same outcome-sales-20261115.csv.txt COMPLETED
+same outcome-sales-bad.csv.txt FAILED
+sales_agg: same (189 cells)
+java: old openjdk version "1.8.0_442" / new openjdk version "17.0.15" 2025-04-15
+job java (stand-in log): old version "1.8.0_442"  / new version "17.0.15" 
+inputs 13, differing 0

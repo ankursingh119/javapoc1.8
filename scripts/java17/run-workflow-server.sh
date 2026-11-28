@@ -20,14 +20,19 @@ JAR=workflow-app/target/workflow-app.jar
 rm -rf "$OUT"; mkdir -p "$OUT/reports"
 OUT_ABS=$(cd "$OUT" && pwd)
 [ -f "$JAR" ] || { echo "run: missing $JAR (build workflow-app)" >&2; exit 1; }
-: "${JAVA8_HOME:?run: set JAVA8_HOME to a JDK 8 for the Spark job}"
-chmod +x scripts/java17/spark-submit-jdk8.sh
+# Card SBJ17-16: SPARK_SUBMIT_STANDIN picks the stand-in (default SBJ17-9's JDK 8 one, which needs JAVA8_HOME);
+# scripts/java17/spark-submit-local.sh runs the job on Java 17 instead.
+STANDIN=${SPARK_SUBMIT_STANDIN:-scripts/java17/spark-submit-jdk8.sh}
+if [ "$STANDIN" = scripts/java17/spark-submit-jdk8.sh ]; then
+  : "${JAVA8_HOME:?run: set JAVA8_HOME to a JDK 8 for the Spark job}"
+fi
+chmod +x "$STANDIN"
 
 java -version > "$OUT/java-version.txt" 2>&1
-SPARK_STANDIN_LOG="$OUT_ABS/spark-standin.log" JAVA8_HOME="$JAVA8_HOME" \
+SPARK_STANDIN_LOG="$OUT_ABS/spark-standin.log" JAVA8_HOME="${JAVA8_HOME:-}" \
 java -Dserver.port="$PORT" -Dreport.dir="$OUT_ABS/reports" \
   "-Dactiviti.jdbc.url=jdbc:h2:mem:java17run;DB_CLOSE_DELAY=-1" \
-  -Dspark.submit.command="$ROOT/scripts/java17/spark-submit-jdk8.sh" \
+  -Dspark.submit.command="$ROOT/$STANDIN" \
   '-Dspark.master=local[*]' -Dspark.hbase.site= \
   -cp "workflow-app/src/test/resources:$JAR" com.example.salesbatch.workflow.WorkflowServer > "$OUT/server.log" 2>&1 &
 PID=$!

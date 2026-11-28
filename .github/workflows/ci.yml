@@ -153,10 +153,17 @@ jobs:
       - run: echo "127.0.0.1 host.docker.internal" | sudo tee -a /etc/hosts
       - run: docker compose -f docker/local/docker-compose.yml up -d hbase
       - run: bash scripts/ci/wait-for-hbase.sh 300
-      - run: mvn -B -pl common,workflow-app -am install
-      - run: mvn -B -pl common,workflow-app -am test
+      # Card SBJ17-16: the whole reactor on JDK 17 (spark-job included); tests run to the end in every module.
+      - run: mvn -B install -DskipTests
+      - run: mvn -B test -fae
       - if: success() || failure()
         run: bash scripts/java17/acceptance/AC1_jdk17_build_and_tests_pass.sh
+      - if: success() || failure()
+        run: bash scripts/java17s1/acceptance/AC1_jdk17_whole_build_and_tests_pass.sh
+      - if: (success() || failure()) && (github.ref_name == 'card/SBJ17-16-java17' || github.head_ref == 'card/SBJ17-16-java17')
+        run: bash scripts/java17s1/acceptance/AC4_jdk8_job_unchanged_class_files_java8.sh
+      - if: (success() || failure()) && (github.ref_name == 'card/SBJ17-16-java17' || github.head_ref == 'card/SBJ17-16-java17')
+        run: bash scripts/java17s1/acceptance/AC5_no_main_or_test_change.sh
       - if: success() || failure()
         run: bash scripts/java17/acceptance/AC3_common_targets_java8.sh
       - if: success() || failure()
@@ -169,8 +176,20 @@ jobs:
           AC2_JOB: jdk17
           SERVER_COMPARE: ${{ steps.server_compare.outcome }}
         run: bash scripts/hbase2/acceptance/AC2_reference_reports_on_hbase2.sh
+      - if: success() || failure()
+        run: bash scripts/java17s1/acceptance/AC2_server_and_job_on_jdk17_match_reference.sh
+      - if: success() || failure()
+        run: bash scripts/java17s1/acceptance/AC3_cluster_on_jdk17.sh
       - if: failure()
         run: docker logs --tail 300 sales-hbase
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: java17s1-run
+          path: |
+            target/java17s1-run/
+            target/spark35-cluster/
+          if-no-files-found: ignore
       - if: always()
         uses: actions/upload-artifact@v7
         with:
