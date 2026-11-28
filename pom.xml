@@ -121,7 +121,8 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.2.4</version>
+          <!-- 3.2.4's ASM cannot read Java 17 class files when relocating (card SBJ17-17). -->
+          <version>3.6.0</version>
         </plugin>
         <plugin>
           <groupId>net.alchim31.maven</groupId>
