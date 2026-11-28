@@ -176,10 +176,29 @@ jobs:
           AC2_JOB: jdk17
           SERVER_COMPARE: ${{ steps.server_compare.outcome }}
         run: bash scripts/hbase2/acceptance/AC2_reference_reports_on_hbase2.sh
-      - if: success() || failure()
+      - id: java17_compare
+        if: success() || failure()
         run: bash scripts/java17s1/acceptance/AC2_server_and_job_on_jdk17_match_reference.sh
-      - if: success() || failure()
+      - id: java17_cluster
+        if: success() || failure()
         run: bash scripts/java17s1/acceptance/AC3_cluster_on_jdk17.sh
+      # Card SBJ17-17 (docs/cards/SBJ17-17.md): scripts/java17f/acceptance AC1 to AC6, the person's criteria for the
+      # Java 17 flip. Lasting guards once the card is built; they fail until then.
+      - if: success() || failure()
+        run: bash scripts/java17f/acceptance/AC1_one_java17_job_all_tests_pass.sh
+      - if: success() || failure()
+        env:
+          JAVA17_COMPARE: ${{ steps.java17_compare.outcome }}
+          JAVA17_CLUSTER: ${{ steps.java17_cluster.outcome }}
+        run: bash scripts/java17f/acceptance/AC2_reports_and_sales_agg_match_on_java17.sh
+      - if: success() || failure()
+        run: bash scripts/java17f/acceptance/AC3_class_files_java17.sh
+      - if: success() || failure()
+        run: bash scripts/java17f/acceptance/AC4_earlier_checks_run_on_java17.sh
+      - if: success() || failure()
+        run: bash scripts/java17f/acceptance/AC5_readme_setup_needs_only_jdk17.sh
+      - if: success() || failure()
+        run: bash scripts/java17f/acceptance/AC6_no_main_source_change.sh
       - if: failure()
         run: docker logs --tail 300 sales-hbase
       - if: always()
