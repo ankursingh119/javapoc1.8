@@ -9,8 +9,8 @@ A sales-batch workflow application. You upload a sales CSV, and the app:
 
 | Layer | Technology |
 |---|---|
-| API and workflow | Java 8 class files, runs on Java 17 in production (Java 8 also works); Spring 5.3 (Spring MVC), Activiti 5.22, embedded Jetty 9.4 |
-| Batch job | Scala 2.12 on Spark 3.5.5, Java 8 class files |
+| API and workflow | Java 17 (built and run on Java 17); Spring 5.3 (Spring MVC), Activiti 5.22, embedded Jetty 9.4 |
+| Batch job | Scala 2.12 on Spark 3.5.5, built and run on Java 17 |
 | Storage | HBase 2 (client 2.5; the server runs in Docker locally) |
 | UI | Angular 20 |
 
@@ -69,7 +69,7 @@ You need about **6 GB of free RAM**, **10 GB of disk** and internet access for t
 
 | # | Tool | Version | Download | Notes |
 |---|---|---|---|---|
-| 1 | **JDK 8** | Temurin 8 (8u4xx) | https://adoptium.net/temurin/releases/?version=8 | **Must be 8** for the full build and the local debug flow: the Spark job (Spark 3.5.5) is built and tested on Java 8, and the debug server starts it with its own Java. The whole build, the Spark job included, also builds, tests and runs on JDK 17 (`mvn install`; the Spark job's tests get Spark's Java 17 module options from `spark-job/pom.xml`), as the pipeline's JDK 17 job does; the local setup below still uses JDK 8 until Java 8 is retired. Choose the `.msi` installer and tick **Set JAVA_HOME variable** and **Add to PATH** |
+| 1 | **JDK 17** | Temurin 17 (17.0.x) | https://adoptium.net/temurin/releases/?version=17 | **Must be 17 or newer** (17 tested): the build stops at once on an older JDK. It is the only JDK the project needs: the build, the tests, the debug server and the Spark job all run on it, and Metals can use it too (2.3). Choose the `.msi` installer and tick **Set JAVA_HOME variable** and **Add to PATH** |
 | 2 | **Apache Maven** | 3.6 or newer (3.9.9 tested) | https://maven.apache.org/download.cgi | Unzip, then add its `bin` folder to `PATH` |
 | 3 | **Node.js** | **20.19 or newer** (24.14 tested) | https://nodejs.org (LTS) | Angular 20 does not work on Node 12 to 18. Check with `node -v` |
 | 4 | **Docker** | Docker Desktop or Rancher Desktop | https://www.docker.com/products/docker-desktop/ | Must be **running**. Allow about 4 GB of memory for it |
@@ -80,7 +80,6 @@ Optional:
 
 | Tool | Why |
 |---|---|
-| **JDK 17** (Temurin 17) | A robust Java runtime for the Scala (Metals) tooling, see 2.3 |
 | **Google Chrome** | Only to run the UI unit tests |
 | **nvm for Windows** (https://github.com/coreybutler/nvm-windows) | To keep several Node versions side by side |
 
@@ -89,15 +88,15 @@ Optional:
 Open a **new** Command Prompt or PowerShell (so it sees the new variables) and check:
 
 ```
-java -version        -> must print  1.8.0_...
-echo %JAVA_HOME%     -> the JDK 8 folder, for example C:\Program Files\Eclipse Adoptium\jdk-8.0.504.1-hotspot
-mvn -v               -> Apache Maven 3.6 or newer (and "Java version: 1.8...")
+java -version        -> must print  openjdk version "17.0...
+echo %JAVA_HOME%     -> the JDK 17 folder, for example C:\Program Files\Eclipse Adoptium\jdk-17.0.13.11-hotspot
+mvn -v               -> Apache Maven 3.6 or newer (and "Java version: 17...")
 node -v              -> v20.19 or newer
 npm -v
 docker info          -> prints server information (no "cannot connect" error)
 ```
 
-If you have several JDKs, set `JAVA_HOME` to JDK 8 and put `%JAVA_HOME%\bin` first on `PATH`. If you have several Node versions (nvm): `nvm use 24.14.0`. nvm applies only to the current terminal, so do it again in each new one.
+If you have several JDKs, set `JAVA_HOME` to JDK 17 and put `%JAVA_HOME%\bin` first on `PATH`. If you have several Node versions (nvm): `nvm use 24.14.0`. nvm applies only to the current terminal, so do it again in each new one.
 
 ### 2.3 VS Code extensions
 
@@ -119,16 +118,16 @@ code --install-extension angular.ng-template
 code --install-extension ms-azuretools.vscode-docker
 ```
 
-**Metals needs Java 17 or newer to run itself**, while the project needs JDK 8. The two are separate:
+**Metals needs Java 17 or newer to run itself**, and so does the project, so one JDK 17 serves both:
 
-- `java.configuration.runtimes` in `.vscode/settings.json` points VS Code builds and runs at **JDK 8**.
-- `metals.javaHome` in the same file points the Metals server at a Java **17+**. `setup-local.cmd` fills it in with the runtime bundled in the Red Hat Java extension. If that folder is missing or the extension updates and the folder name changes, install Temurin 17 and set `metals.javaHome` to its folder instead.
+- `java.configuration.runtimes` in `.vscode/settings.json` points VS Code builds and runs at **JDK 17**.
+- `metals.javaHome` in the same file points the Metals server at a Java **17+**. `setup-local.cmd` fills it in with the runtime bundled in the Red Hat Java extension. If that folder is missing or the extension updates and the folder name changes, set `metals.javaHome` to your JDK 17 folder (`JAVA_HOME`) instead.
 
 ### 2.4 Other platforms (not tested)
 
 The project code is cross-platform, but the helper scripts and `launch.json` are written for Windows. On macOS or Linux:
 
-- Install the same tools (JDK 8, Maven, Node 20.19+, Docker, VS Code) with your package manager.
+- Install the same tools (JDK 17, Maven, Node 20.19+, Docker, VS Code) with your package manager.
 - Skip `setup-local.cmd` and run its steps by hand (see 3.2).
 - Create `.vscode/settings.json` yourself (see 3.3).
 - `host.docker.internal` must resolve to the host. Docker Desktop does this on macOS; on Linux add `127.0.0.1 host.docker.internal` to `/etc/hosts`.
@@ -153,8 +152,8 @@ It does six things and stops with a clear message if one fails:
 
 | Step | What it does |
 |---|---|
-| 1 | Checks JDK 8, Maven, Node, Docker (and that Docker is running) |
-| 2 | Builds the Docker image `salesbatch-runtime` (Java 8 + Spark 3.5.5; the first build downloads about 400 MB) |
+| 1 | Checks JDK 17, Maven, Node, Docker (and that Docker is running) |
+| 2 | Builds the Docker image `salesbatch-runtime` (Java 17 + Spark 3.5.5; the first build downloads about 400 MB) |
 | 3 | `mvn package` for the Java and Scala code, and writes `target/local-classpath.txt` |
 | 4 | `npm ci` in `ui/` |
 | 5 | Writes `.vscode/settings.json` for your machine (skipped if the file already exists) |
@@ -167,6 +166,7 @@ Manual equivalent (macOS, Linux, or if you prefer typing):
 ```
 docker build -t salesbatch-runtime docker
 mvn -B -DskipTests package dependency:build-classpath -Dmdep.outputFile=target/local-classpath.txt
+tr ':' '\n' < spark-job/target/local-classpath.txt | grep -v slf4j-log4j12- | paste -sd: - > spark-job/target/local-classpath-java17.txt
 cd ui && npm ci && cd ..
 docker compose -f docker/local/docker-compose.yml up -d
 ```
@@ -180,7 +180,7 @@ docker compose -f docker/local/docker-compose.yml up -d
   "java.configuration.updateBuildConfiguration": "automatic",
   "debug.allowBreakpointsEverywhere": true,
   "java.configuration.runtimes": [
-    { "name": "JavaSE-1.8", "path": "C:/Program Files/Eclipse Adoptium/jdk-8.0.504.1-hotspot", "default": true }
+    { "name": "JavaSE-17", "path": "C:/Program Files/Eclipse Adoptium/jdk-17.0.13.11-hotspot", "default": true }
   ],
   "files.watcherExclude": { "**/target/**": true },
   "metals.javaHome": "C:/Program Files/Eclipse Adoptium/jdk-17.0.x-hotspot"
@@ -197,7 +197,7 @@ docker compose -f docker/local/docker-compose.yml up -d
    node scripts/fix-bloop.js
    ```
 
-   Metals compiles the Java module `common` with a `-release 8` flag that JDK 8 rejects, which breaks the Scala debugger attach. The script removes that dependency (Maven already builds `common`).
+   Bloop compiles the Java module `common` with a `-release` flag that older JDKs rejected, which broke the Scala debugger attach. On JDK 17 the script is harmless and still advised: it removes that dependency (Maven already builds `common`).
 4. In VS Code press **Ctrl+Shift+P** and run **Metals: Restart build server**.
 
 Repeat steps 3 and 4 after every re-import of the build.
@@ -440,7 +440,7 @@ By default Activiti keeps runs in a file database under `./data/activiti` for th
 docker exec postgres psql -U postgres -c "CREATE ROLE salesbatch LOGIN PASSWORD 'salesbatch'" -c "CREATE DATABASE salesbatch_activiti OWNER salesbatch"
 ```
 
-Then use the launch configuration **Debug app (Postgres + Docker Spark cluster)**. It passes `-Duser.timezone=UTC` because Java 8 reports the old zone name `Asia/Calcutta`, which Postgres 17 rejects. Delete the `data` folder to reset the file database.
+Then use the launch configuration **Debug app (Postgres + Docker Spark cluster)**. It passes `-Duser.timezone=UTC` because Java on Windows can report the old zone name `Asia/Calcutta` for India, which Postgres 17 rejects. Delete the `data` folder to reset the file database.
 
 ---
 
@@ -450,13 +450,13 @@ Then use the launch configuration **Debug app (Postgres + Docker Spark cluster)*
 |---|---|
 | **500 on CSV upload**, and `ng serve` shows `http proxy error ... ECONNREFUSED` | The Java API is not running on 8081. Start it (4.2) and wait for `Local debug server ...` |
 | `npm ci` fails with `Cannot read property '@angular/common' of undefined` | Node is too old (12 to 18). Install Node 20.19+; with nvm: `nvm use 24.14.0`, then rerun |
-| `JAVA_HOME ... is not JDK 8` | Install Temurin 8, set `JAVA_HOME` to it, open a **new** terminal |
+| `JAVA_HOME ... is not JDK 17`, or Maven's enforcer says Java 17 is required | Install Temurin 17, set `JAVA_HOME` to it, open a **new** terminal |
 | `Could not find or load main class .port=8081` | PowerShell split a `-D` option at the dot. Quote it: `'-Dserver.port=8081'` |
 | `Could not find or load main class ...LocalDebugServer` | `workflow-app\target\test-classes` is missing from the classpath. Run the build (3.2) |
 | `Could not find or load main class RiskCanvas\...` | A `-D` option contained a path with a space and was split. Do not put `${workspaceFolder}` paths in `vmArgs` |
 | `Missing spark-job/target/local-classpath.txt` | Run the `mvn ... dependency:build-classpath` command (3.2) |
 | `TransportTimeoutException` popup | Keep `"console": "internalConsole"` in `launch.json` |
-| The Spark job fails when the local debug server runs on Java 17 | The debug server starts the Scala job with its own Java, and the job (Spark 3.5.5) is built and tested on Java 8 only. Keep `javaExec` and `java.configuration.runtimes` pointing at JDK 8 (or use the Docker Spark cluster configuration), and start VS Code after setting `JAVA_HOME` |
+| The Spark job of the local debug server fails with `IllegalAccessError`, `InaccessibleObjectException` or a ZooKeeper error | The debug server starts the Scala job in a child JVM, which needs Spark's Java 17 module options and a classpath without `slf4j-log4j12`. The two "real HBase + Scala Spark job" configurations in `launch.json` pass both (`JDK_JAVA_OPTIONS`, `spark-job/target/local-classpath-java17.txt`); if that file is missing, rerun `setup-local.cmd` or the manual commands in 3.2 |
 | UI shows another app, or the port is in use | The UI uses port 4300 (`ui/angular.json`) |
 | API fails at startup with an HBase error | HBase is not ready or not running. `docker ps`, wait a minute; ports 2181, 16000, 16020 must be published |
 | Run is `FAILED` with a connection error to `host.docker.internal` | HBase is down, or the name does not resolve. See the hosts-file note in section 9 |
@@ -480,7 +480,7 @@ Then use the launch configuration **Debug app (Postgres + Docker Spark cluster)*
 | `spark-job/` | Scala Spark job, built as a fat jar |
 | `workflow-app/` | Spring MVC + Activiti on embedded Jetty: REST API, Swagger UI, process definition. `LocalDebugServer` (in `src/test`) is the entry point used for local debugging |
 | `ui/` | Angular 20 front end (`proxy.conf.json` forwards `/batches` and `/data` to `localhost:8081`) |
-| `docker/` | `Dockerfile` (Java 8 + Spark 3.5.5), and `local/docker-compose.yml` for HBase and the Spark cluster |
+| `docker/` | `Dockerfile` (Java 17 + Spark 3.5.5), and `local/docker-compose.yml` for HBase and the Spark cluster |
 | `sample-data/` | Example CSV files |
 | `scripts/` | `fix-bloop.js`, `write-vscode-settings.ps1` |
 | `.vscode/` | `launch.json`, `extensions.json`, and `settings.json` (machine specific, written by setup) |

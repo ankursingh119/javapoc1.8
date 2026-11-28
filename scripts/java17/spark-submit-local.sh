@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Card SBJ17-16. A stand-in for spark-submit that runs the Spark job on a Java 17 (or any 9+) JVM, beside SBJ17-9's
-# spark-submit-jdk8.sh (unchanged). The server's ProcessSparkJobLauncher calls it as
+# Card SBJ17-16. A stand-in for spark-submit that runs the Spark job on a Java 17 JVM (since card SBJ17-17 the only
+# stand-in; SBJ17-9's JDK 8 one was retired). The server's ProcessSparkJobLauncher calls it as
 #   spark-submit-local.sh --class <main class> --master local[*] [--files <hbase-site>] <jar> <businessDate>
 # and it runs <main class> on JOB_JAVA_HOME's java (default: the java on PATH) with local[*], the spark-job classpath
 # and Spark's module options (scripts/java17/spark-java-options.sh), the same command LocalJvmSparkJobLauncher builds.

@@ -79,7 +79,10 @@
         <configuration>
           <scalaVersion>${scala.version}</scalaVersion>
           <args>
-            <arg>-target:jvm-1.8</arg>
+            <!-- Card SBJ17-17: compile against the Java 17 API. Scala 2.12 emits Java 8 (major 52) class files whatever
+                 the flags (scalac: "-target is deprecated: Scala 2.12 cannot emit valid class files for targets newer
+                 than 8"); they run on Java 17. Java 17 class files need Scala 2.13 (docs/cards/SBJ17-17.md, Build). -->
+            <arg>-release:17</arg>
             <arg>-deprecation</arg>
           </args>
         </configuration>

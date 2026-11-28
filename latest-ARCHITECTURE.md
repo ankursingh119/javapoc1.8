@@ -10,7 +10,7 @@ This is the up-to-date description of the app as it is built now. It replaces th
 - the VS Code debug setup for Java and Scala, and how **Metals and Bloop** make Scala breakpoints work (section 14);
 - how the local setup relates to **EMR** (section 10, for reference).
 
-Versions the build uses: the server on Java 17 (Java 8 class files, Spring 5.3), the Spark job on Java 8 (Spark 3.5, Scala 2.12), and HBase 2 (the 2.5 client, an HBase 2 server in Docker).
+Versions the build uses: the server on Java 17 (Spring 5.3), the Spark job on Java 17 (Spark 3.5, Scala 2.12), and HBase 2 (the 2.5 client, an HBase 2 server in Docker).
 
 **Production cluster:** EMR 5.36 runs neither Spark 3.5 nor an HBase 2 server, so the production cluster must move off EMR 5.36 before any release. No target EMR release is chosen yet.
 
@@ -38,7 +38,7 @@ flowchart TB
     subgraph HOST["Windows host"]
         BROWSER["Browser<br/>http://localhost:4300"]
         NG["ng serve (Angular 20)<br/>port 4300<br/>dev proxy: /batches and /data"]
-        subgraph VSC["VS Code debugger (JDK 8)"]
+        subgraph VSC["VS Code debugger (JDK 17)"]
             APP["Java app: LocalDebugServer<br/>port 8081<br/>Jetty + Spring MVC + Activiti"]
         end
         CHILD["Spark child JVM<br/>local[*], JDWP port 5006<br/>(mode local-jvm)"]
@@ -87,7 +87,7 @@ flowchart LR
 
 | Quick start | IDE setup (docker/local) |
 |---|---|
-| One command, only Docker needed | JDK 8, Maven, Node, VS Code, Docker |
+| One command, only Docker needed | JDK 17, Maven, Node, VS Code, Docker |
 | Spark `local[*]` inside the app container | Spark `local[*]` child JVM, or the Docker cluster (master and 2 workers) |
 | HBase reachable only inside the compose network (service name `hbase`) | HBase published on the host (advertised as `host.docker.internal`) |
 | Workflow state in an H2 file in a Docker volume | H2 file, or Postgres |
@@ -115,7 +115,7 @@ flowchart LR
         REPO["HBaseSalesRepository<br/>hbase-client 2.5.10<br/>RowKeys, SalesSchema, HBaseTables"]
     end
 
-    subgraph SPM["spark-job (Scala 2.12.18, Java 8)"]
+    subgraph SPM["spark-job (Scala 2.12.18, Java 17)"]
         AGG["SalesAggregator<br/>Spark 3.5.5, Hadoop 2.10.1 (provided)<br/>hbase-mapreduce 2.5.10 (bundled, Guava relocated)"]
     end
 
@@ -150,7 +150,7 @@ flowchart LR
 | hbase-client | 2.5.10 | common | Reads and writes the HBase tables |
 | Spark core | 3.5.5 | spark-job | Aggregation. `provided`: the cluster supplies it |
 | Hadoop client | 2.10.1 | spark-job | `provided` |
-| Scala | 2.12.18 | spark-job | Language of the job (Java 8 class files). `provided` |
+| Scala | 2.12.18 | spark-job | Language of the job (built and run on Java 17). `provided` |
 | hbase-mapreduce | 2.5.10 | spark-job | HBase input format for Spark. Bundled in the fat jar, because EMR does not put HBase on Spark's classpath |
 | HBase | 2 (container `harisekhon/hbase:2.1`) | external | Storage for rows, aggregates, run status |
 | Spark standalone | 3.5.5 (image `salesbatch-runtime`) | external (Docker) | Optional cluster: 1 master, 2 workers |
@@ -358,7 +358,7 @@ flowchart LR
 
 | EMR piece | Local stand-in | How faithful |
 |---|---|---|
-| **Software versions**: the build uses Spark 3.5.5, Scala 2.12.18, an HBase 2.5 client, Hadoop 2.10.1 and Java 8 for the job | The same Spark and Scala in the Maven build and the Spark image; an HBase 2 server image | **Not matched today**: EMR 5.36 runs Spark 2 and HBase 1, so the production cluster must move off EMR 5.36 before any release. The Docker Spark image bundles Hadoop 3 libraries |
+| **Software versions**: the build uses Spark 3.5.5, Scala 2.12.18, an HBase 2.5 client, Hadoop 2.10.1 and Java 17 for the job | The same Spark and Scala in the Maven build and the Spark image; an HBase 2 server image | **Not matched today**: EMR 5.36 runs Spark 2 and HBase 1, so the production cluster must move off EMR 5.36 before any release. The Docker Spark image bundles Hadoop 3 libraries |
 | **Master node** runs the app and calls `spark-submit` | The app runs in VS Code on your PC and runs `docker exec spark-master spark-submit` | **Medium**: same roles, different place |
 | **YARN** schedules containers on the nodes | A Spark **standalone** master and workers | **Low to medium**: the Spark application code is identical, but the scheduler is different (see below) |
 | **Core and task nodes** run executors | Containers `spark-worker-1` and `spark-worker-2` (2 cores and 1 GB each) | **Medium**: real separate executor processes, but tiny and on one machine |
@@ -411,7 +411,7 @@ These are JVM options (`-Dname=value`) in the `vmArgs` of the launch configs.
 | `activiti.jdbc.driver` | `org.h2.Driver` | Use `org.postgresql.Driver` for Postgres |
 | `activiti.jdbc.username`, `activiti.jdbc.password` | `sa`, empty | Database credentials |
 | `debug.inmemory` | false | Use in-memory fakes for HBase and Spark (no Docker) |
-| `user.timezone` | JVM default | Set to `UTC` with Postgres: Java 8 reports `Asia/Calcutta`, which Postgres 17 rejects |
+| `user.timezone` | JVM default | Set to `UTC` with Postgres: Java on Windows can report `Asia/Calcutta`, which Postgres 17 rejects |
 
 ## 12. Ports
 
@@ -429,7 +429,7 @@ These are JVM options (`-Dname=value`) in the `vmArgs` of the launch configs.
 
 ## 13. VS Code debug setup
 
-Defined in [.vscode/launch.json](.vscode/launch.json). All Java configs run on JDK 8 (`javaExec`) with `console: internalConsole`.
+Defined in [.vscode/launch.json](.vscode/launch.json). All Java configs run on JDK 17 (`javaExec`) with `console: internalConsole`.
 
 | Launch config | Spark | Workflow DB | Use |
 |---|---|---|---|
@@ -458,7 +458,7 @@ Metals never compiles anything itself. It asks Bloop, using the Build Server Pro
 
 ```mermaid
 flowchart LR
-    MVN["Maven import<br/>(maven-bloop plugin)"] -->|"writes"| BF[".bloop/*.json<br/>one file per module:<br/>classpath, sources,<br/>Scala 2.12.18, JDK 8, dependencies"]
+    MVN["Maven import<br/>(maven-bloop plugin)"] -->|"writes"| BF[".bloop/*.json<br/>one file per module:<br/>classpath, sources,<br/>Scala 2.12.18, JDK 17, dependencies"]
     FIX["scripts/fix-bloop.js<br/>(workaround)"] -->|"edits"| BF
     BF -->|"read by"| BL["Bloop<br/>build server<br/>(Zinc incremental compiler)"]
     VS["VS Code<br/>+ Metals extension"] <-->|"LSP"| MT["Metals<br/>language server"]
@@ -506,11 +506,11 @@ sequenceDiagram
 ### The two JVMs
 
 - **Metals and Bloop** run on the newer Java bundled with the Red Hat Java extension (`metals.javaHome`), because Metals itself needs Java 17 or newer.
-- **The project** is still compiled and run for **JDK 8**: `.bloop/spark-job.json` records the JDK 8 home, and the app and the Spark job run on JDK 8.
+- **The project** is compiled and run on **JDK 17** (card SBJ17-17): `.bloop/spark-job.json` records the JDK 17 home, and the app and the Spark job run on JDK 17.
 
 ### The workaround: `scripts/fix-bloop.js`
 
-- **Problem.** Bloop sees `spark-job` depending on the Java module `common`, so it compiles `common` first. That compile is given a `-release 8` flag that JDK 8's `javac` does not have (`bad option: '-release'`). It fails, everything after it is blocked, and the attach reports `Compilation not successful`.
+- **Problem.** Bloop sees `spark-job` depending on the Java module `common`, so it compiles `common` first. That compile was given a `-release` flag that JDK 8's `javac` did not have (`bad option: '-release'`); on JDK 17 the flag is accepted and the patch below is kept as harmless. It fails, everything after it is blocked, and the attach reports `Compilation not successful`.
 - **Fix.** The script removes `common` from the dependencies of `spark-job` in `.bloop/`. `common` is already built by Maven and `common/target/classes` is on the `spark-job` classpath, so Bloop now only compiles the Scala code.
 - **A second fix is in the POMs.** HBase pulls in a `jdk.tools` dependency that the Bloop Maven plugin cannot resolve. It is excluded in `common/pom.xml` and `spark-job/pom.xml`. Without that, the Bloop import itself fails.
 - **Re-importing overwrites `.bloop/`**, so rerun the script after every import.

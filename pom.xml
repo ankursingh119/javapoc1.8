@@ -17,9 +17,10 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <java.version>1.8</java.version>
+    <!-- Java 17 class files, built on JDK 17 only (card SBJ17-17; Java 8 until then). -->
+    <java.version>17</java.version>
 
-    <!-- spark-job builds on Spark 3.5.5 and Scala 2.12.18, still Java 8 class files (card SBJ17-11). The HBase client
+    <!-- spark-job builds on Spark 3.5.5 and Scala 2.12.18 (card SBJ17-11), Java 17 class files. The HBase client
          is 2.5 (card SBJ17-14) and needs an HBase 2 server; the provided Hadoop 2.10.1 client stays. EMR 5.36 runs
          neither Spark 3.5 nor HBase 2, so the production cluster must move before this is released there (risk
          SBJ17-12). -->
@@ -56,6 +57,26 @@
 
   <build>
     <plugins>
+      <!-- Card SBJ17-17: the build needs JDK 17 or later; on an older JDK it stops here with one plain line. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>3.5.0</version>
+        <executions>
+          <execution>
+            <id>require-jdk17</id>
+            <goals><goal>enforce</goal></goals>
+            <configuration>
+              <rules>
+                <requireJavaVersion>
+                  <version>[17,)</version>
+                  <message>This project needs JDK 17 (README, section 2). Set JAVA_HOME to a JDK 17.</message>
+                </requireJavaVersion>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <!-- Coverage: "mvn test" writes <module>/target/site/jacoco/index.html (and jacoco.csv) for each module. -->
       <plugin>
         <groupId>org.jacoco</groupId>
@@ -81,8 +102,7 @@
           <artifactId>maven-compiler-plugin</artifactId>
           <version>3.8.1</version>
           <configuration>
-            <source>${java.version}</source>
-            <target>${java.version}</target>
+            <release>${java.version}</release>
           </configuration>
         </plugin>
         <plugin>
@@ -101,7 +121,8 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.2.4</version>
+          <!-- 3.2.4's ASM cannot read Java 17 class files when relocating (card SBJ17-17). -->
+          <version>3.6.0</version>
         </plugin>
         <plugin>
           <groupId>net.alchim31.maven</groupId>
@@ -112,28 +133,4 @@
     </pluginManagement>
   </build>
 
-  <profiles>
-    <!-- Built on JDK 9 or later (the JDK 17 job), javac gets release 8: Java 8 class files, as spark-job on JDK 8
-         and Spark 2.4 need for common, and any JDK 9+ API is refused at compile time. On JDK 8, source and target
-         1.8 as before. Card SBJ17-9, docs/cards/SBJ17-9.md. -->
-    <profile>
-      <id>release-8-on-jdk9-plus</id>
-      <activation>
-        <jdk>[9,)</jdk>
-      </activation>
-      <build>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-compiler-plugin</artifactId>
-              <configuration>
-                <release>8</release>
-              </configuration>
-            </plugin>
-          </plugins>
-        </pluginManagement>
-      </build>
-    </profile>
-  </profiles>
 </project>

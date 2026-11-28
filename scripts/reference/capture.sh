@@ -2,7 +2,7 @@
 # Card SBJ17-8. Run today's application on the three sample files and keep what it produces.
 #   bash scripts/reference/capture.sh [OUT]      (OUT defaults to target/reference-run)
 # Needs: HBase up (docker compose -f docker/local/docker-compose.yml up -d hbase; scripts/ci/wait-for-hbase.sh 300),
-# a JDK 8 on PATH, and `mvn -B install` done once. Run from anywhere; it works from the repository root.
+# a JDK 17 on PATH (card SBJ17-17), and `mvn -B install` done once. Run from anywhere; it works from the repository root.
 # It builds the classpath files (README 3.2) unless SKIP_BUILD=1, starts LocalDebugServer (real HBase, the Scala job
 # in a child JVM with local[*]), runs each file through the REST flow, approves what waits, and writes into OUT:
 #   reports/report-<date>.csv          the reports the application wrote
@@ -30,8 +30,18 @@ done
 case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*) SEP=';' ;; *) SEP=':' ;; esac
 CP="workflow-app/target/test-classes${SEP}workflow-app/target/classes${SEP}$(cat workflow-app/target/local-classpath.txt)"
 
+# Card SBJ17-17: the project runs on Java 17. The Scala job's child JVM (LocalJvmSparkJobLauncher, a test source
+# that stays unchanged) inherits JDK_JAVA_OPTIONS, so Spark's module options reach it that way, and it reads its
+# classpath from a copy without slf4j-log4j12 (on Java 9+ that binding breaks ZooKeeper's client thread against
+# Spark 3.5's log4j-1.2-api; spark-job/pom.xml and scripts/java17/spark-submit-local.sh leave it out the same way).
+. scripts/java17/spark-java-options.sh
+export JDK_JAVA_OPTIONS="$SPARK_JAVA17_OPTIONS"
+JOB_CP="$OUT/spark-job-classpath.txt"
+tr "$SEP" '\n' < spark-job/target/local-classpath.txt | grep -v 'slf4j-log4j12-' | paste -sd"$SEP" - > "$JOB_CP"
+
 java -Dserver.port="$PORT" -Dreport.dir="$OUT_ABS/reports" \
   "-Dactiviti.jdbc.url=jdbc:h2:mem:reference;DB_CLOSE_DELAY=-1" \
+  -Dspark.local.classpath.file="$OUT_ABS/spark-job-classpath.txt" \
   -cp "$CP" com.example.salesbatch.workflow.LocalDebugServer > "$OUT/server.log" 2>&1 &
 PID=$!
 trap 'kill $PID 2>/dev/null || true' EXIT

@@ -1,4 +1,4 @@
-# Writes .vscode/settings.json for THIS machine (JDK 8 path, Metals Java). Called by setup-local.cmd.
+# Writes .vscode/settings.json for THIS machine (JDK 17 path, Metals Java). Called by setup-local.cmd.
 # Existing settings.json is left alone.
 $root = Split-Path -Parent $PSScriptRoot
 $target = Join-Path $root '.vscode\settings.json'
@@ -8,7 +8,7 @@ $jdk = ($env:JAVA_HOME).TrimEnd('\').Replace('\', '/')
 $settings = [ordered]@{
   'java.configuration.updateBuildConfiguration' = 'automatic'
   'debug.allowBreakpointsEverywhere'            = $true
-  'java.configuration.runtimes'                 = @(@{ name = 'JavaSE-1.8'; path = $jdk; default = $true })
+  'java.configuration.runtimes'                 = @(@{ name = 'JavaSE-17'; path = $jdk; default = $true })
   'files.watcherExclude'                        = @{ '**/target/**' = $true }
 }
 
